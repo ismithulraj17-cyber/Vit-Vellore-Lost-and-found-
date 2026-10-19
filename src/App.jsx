@@ -299,8 +299,8 @@ export default function App() {
     verifiedPin: '1234'
   });
   const phoneDigitCount = formData.phone.replace(/\D/g, '').length;
-  const phoneError = formData.phone.trim() && (phoneDigitCount < 10 || phoneDigitCount > 11)
-    ? 'Wrong number. Enter a phone number with 10 or 11 digits.'
+  const phoneError = formData.phone.trim() && phoneDigitCount !== 10
+    ? 'Wrong number. Enter exactly 10 digits after +91.'
     : '';
 
   useEffect(() => {
@@ -471,6 +471,7 @@ export default function App() {
     const newItem = withMapFields({
       id: Date.now(),
       ...formData,
+      phone: formData.phone ? `+91 ${formData.phone.replace(/\D/g, '')}` : '',
       name: formData.title,
       building: formData.location,
       coordinates,
@@ -1034,8 +1035,8 @@ export default function App() {
                 <div><h3 className="text-sm font-semibold">Contact details <span className={darkMode ? 'font-normal text-zinc-400' : 'font-normal text-zinc-600'}>(optional)</span></h3><p className={`mt-1 text-xs ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>These stay private unless you choose to share them on the report.</p></div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <label className="text-xs font-semibold">Name<input autoComplete="name" value={formData.owner} onChange={event => setFormData({ ...formData, owner: event.target.value })} placeholder="Your name" className={`mt-1 w-full rounded-xl border p-3 text-sm font-normal ${darkMode ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-zinc-200'}`} /></label>
-                  <label className="text-xs font-semibold" htmlFor="report-phone">Phone<input id="report-phone" type="tel" inputMode="numeric" autoComplete="tel" maxLength={20} aria-invalid={Boolean(phoneError)} aria-describedby="report-phone-hint" value={formData.phone} onChange={event => setFormData({ ...formData, phone: event.target.value })} placeholder="10 or 11 digits" className={`mt-1 w-full rounded-xl border p-3 text-sm font-normal ${phoneError ? 'border-rose-500' : darkMode ? 'border-zinc-700' : 'border-zinc-200'} ${darkMode ? 'bg-zinc-900 text-white' : 'bg-white'}`} /></label>
-                  <p id="report-phone-hint" aria-live="polite" className={`text-xs ${phoneError ? 'text-rose-600 dark:text-rose-400' : darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>{phoneError || 'Enter 10 or 11 digits. Leave blank if you do not want to share a phone number.'}</p>
+                  <label className="text-xs font-semibold" htmlFor="report-phone">Phone<span className={`mt-1 flex items-center overflow-hidden rounded-xl border ${phoneError ? 'border-rose-500' : darkMode ? 'border-zinc-700' : 'border-zinc-200'}`}><span className={`border-r px-3 py-3 text-sm ${darkMode ? 'border-zinc-700 bg-zinc-800 text-zinc-300' : 'border-zinc-200 bg-zinc-50 text-zinc-600'}`}>+91</span><input id="report-phone" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10} aria-invalid={Boolean(phoneError)} aria-describedby="report-phone-hint" value={formData.phone} onChange={event => setFormData({ ...formData, phone: event.target.value.replace(/\D/g, '').slice(0, 10) })} placeholder="10-digit number" className={`min-w-0 flex-1 bg-transparent p-3 text-sm font-normal outline-none ${darkMode ? 'text-white' : 'text-zinc-900'}`} /></span></label>
+                  <p id="report-phone-hint" aria-live="polite" className={`text-xs ${phoneError ? 'text-rose-600 dark:text-rose-400' : darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>{phoneError || 'Enter exactly 10 digits. The +91 country code is added automatically.'}</p>
                   <label className="text-xs font-semibold sm:col-span-2">Email<input type="email" autoComplete="email" value={formData.contact} onChange={event => setFormData({ ...formData, contact: event.target.value })} placeholder="name@example.com" className={`mt-1 w-full rounded-xl border p-3 text-sm font-normal ${darkMode ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-zinc-200'}`} /></label>
                 </div>
                 <label className="flex items-start gap-2 text-xs leading-relaxed"><input type="checkbox" checked={formData.shareContact} onChange={event => setFormData({ ...formData, shareContact: event.target.checked })} className="mt-0.5 accent-cyan-600" /><span>Show these contact details to people viewing this report</span></label>
