@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import MapSearch from './components/MapSearch';
 import { BASE_ZOOM, CAMPUS_ASPECT_RATIO, CAMPUS_BOUNDS, FLY_MS, MAX_ZOOM } from './config/mapConfig';
 import { getMapItemFields } from './lib/mapSearch';
@@ -1207,6 +1208,7 @@ export default function App() {
         </div>
       )}
 
+      <SpeedInsights />
     </div>
   );
 }
