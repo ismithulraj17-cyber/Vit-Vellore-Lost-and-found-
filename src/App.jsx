@@ -249,6 +249,10 @@ export default function App() {
   const mapViewportRef = React.useRef(null);
   const [focusedSearchId, setFocusedSearchId] = useState(null);
   const [focusedMapItem, setFocusedMapItem] = useState(null);
+  const reunitedCount = new Set([
+    ...items.filter(item => item.status === 'resolved').map(item => String(item.id)),
+    ...Object.keys(readResolvedItems()),
+  ]).size;
   const visibleMapItems = items.filter(item => item.status !== 'resolved' || !item.resolvedAt || mapClock - item.resolvedAt < 60_000);
 
   useEffect(() => {
@@ -580,7 +584,7 @@ export default function App() {
     if (enteredPin === selectedItem.verifiedPin || enteredPin === '1234') {
       const randomMsg = SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)];
       const resolvedAt = Date.now();
-      setItems(current => current.map(i => i.id === selectedItem.id ? { ...i, status: 'resolved', resolvedAt } : i));
+      setItems(current => current.map(i => String(i.id) === String(selectedItem.id) ? { ...i, status: 'resolved', resolvedAt } : i));
       try {
         const resolved = readResolvedItems();
         resolved[selectedItem.id] = resolvedAt;
@@ -670,7 +674,7 @@ export default function App() {
               </div>
             </div>
             <div className="relative grid grid-cols-3 gap-2 sm:gap-3 lg:min-w-[330px]">
-              {[{ value: items.filter(item => item.status === 'lost').length, label: 'Lost' }, { value: items.filter(item => item.status === 'found').length, label: 'Found' }, { value: items.filter(item => item.status === 'resolved').length, label: 'Reunited' }].map(stat => <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/[0.07] px-3 py-4 text-center backdrop-blur sm:px-5 sm:py-5"><p className="text-2xl font-semibold text-white sm:text-3xl">{stat.value}</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55 sm:text-xs">{stat.label}</p></div>)}
+              {[{ value: items.filter(item => item.status === 'lost').length, label: 'Lost' }, { value: items.filter(item => item.status === 'found').length, label: 'Found' }, { value: reunitedCount, label: 'Reunited' }].map(stat => <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/[0.07] px-3 py-4 text-center backdrop-blur sm:px-5 sm:py-5"><p className="text-2xl font-semibold text-white sm:text-3xl">{stat.value}</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55 sm:text-xs">{stat.label}</p></div>)}
             </div>
           </div>
         </section>
