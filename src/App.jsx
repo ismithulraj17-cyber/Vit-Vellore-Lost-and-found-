@@ -5,8 +5,9 @@ import { BASE_ZOOM, CAMPUS_ASPECT_RATIO, CAMPUS_BOUNDS, FLY_MS, MAX_ZOOM } from 
 import { getMapItemFields } from './lib/mapSearch';
 import { createReport, fetchReports, uploadReportImage } from './lib/reportsRepository';
 import { isSupabaseConfigured } from './lib/supabaseClient';
+import SEED_ITEMS from './data/seedItems.json';
 import { 
-  Search, Plus, MapPin, Calendar, Tag, ShieldCheck, 
+  Search, Plus, MapPin, Calendar, ShieldCheck,
   CheckCircle, AlertTriangle, 
   Sun, Moon, Compass, Filter, Sparkles, Eye, X, Check,
   ArrowRight, AlertCircle, ZoomIn, ZoomOut, Navigation
@@ -30,7 +31,7 @@ const VIT_LOCATIONS = [
   'Food Court', 'Food Street', 'Main Canteen', 'Foodys', 'Greenos', 'Nescafe',
   'Woodys', 'AllMart Supermarket', 'Snacks & Milk Kiosk', 'Book Store',
   'Xerox & Stationery', 'Post Office', 'Indian Bank ATM', 'City Union Bank ATM',
-  'Swimming Pool', 'VIT Lake Parking', 'Gate 2A', 'Gate 2B', 'Gate 3', 'Gate 3A', 'Gate 11'
+  'Swimming Pool', 'VIT Lake Parking', 'Bus Stand', 'Gate 2A', 'Gate 2B', 'Gate 3', 'Gate 3A', 'Gate 11'
 ];
 
 const MEN_HOSTEL_START = VIT_LOCATIONS.findIndex(location => location.startsWith('MH '));
@@ -45,6 +46,46 @@ const [[CAMPUS_SOUTH, CAMPUS_WEST], [CAMPUS_NORTH, CAMPUS_EAST]] = CAMPUS_BOUNDS
 const INITIAL_MAP_CENTER = {
   lat: (CAMPUS_NORTH + CAMPUS_SOUTH) / 2,
   lon: (CAMPUS_WEST + CAMPUS_EAST) / 2,
+};
+const CATEGORY_BADGE_CLASSES = {
+  Electronics: 'border-[#c8d9d7] bg-[#e8f0ee] text-[#385c58] dark:border-[#3c5955] dark:bg-[#243a37] dark:text-[#c5dcda]',
+  Stationery: 'border-[#d6cbdc] bg-[#f0ebf2] text-[#5d4c66] dark:border-[#594b61] dark:bg-[#382d3d] dark:text-[#ddd0e4]',
+  Personal: 'border-[#e2d4b6] bg-[#f3eddf] text-[#705a31] dark:border-[#625334] dark:bg-[#3e3525] dark:text-[#e5d6b6]',
+  'ID & Cards': 'border-[#e2caca] bg-[#f3e8e5] text-[#754b49] dark:border-[#684746] dark:bg-[#402d2d] dark:text-[#e5c9c5]',
+  Books: 'border-[#cbd5e0] bg-[#e9eef3] text-[#455a70] dark:border-[#46586c] dark:bg-[#2c3947] dark:text-[#cdd9e5]',
+  Clothing: 'border-[#ccd8c9] bg-[#e9efe6] text-[#4c6149] dark:border-[#465a42] dark:bg-[#2e3a2b] dark:text-[#d0dfca]',
+  Keys: 'border-[#d5d8bd] bg-[#eef0e1] text-[#5e6339] dark:border-[#535638] dark:bg-[#373a27] dark:text-[#d9dcba]',
+  Bags: 'border-[#dfcdbd] bg-[#f2e9e0] text-[#76563f] dark:border-[#644b39] dark:bg-[#3c3027] dark:text-[#e1cbb5]',
+};
+const CATEGORY_TEXT_CLASSES = {
+  Electronics: 'text-[#385c58] dark:text-[#b6d2cf]',
+  Stationery: 'text-[#705579] dark:text-[#d7c0e1]',
+  Personal: 'text-[#806329] dark:text-[#e5d09b]',
+  'ID & Cards': 'text-[#935452] dark:text-[#e5bbbb]',
+  Books: 'text-[#4a6380] dark:text-[#bbcee2]',
+  Clothing: 'text-[#4e6b4b] dark:text-[#bfd5b9]',
+  Keys: 'text-[#68703b] dark:text-[#d2d99e]',
+  Bags: 'text-[#936344] dark:text-[#e4c2a3]',
+};
+const CATEGORY_LIGHT_TEXT_CLASSES = {
+  Electronics: 'text-[#385c58]',
+  Stationery: 'text-[#705579]',
+  Personal: 'text-[#806329]',
+  'ID & Cards': 'text-[#935452]',
+  Books: 'text-[#4a6380]',
+  Clothing: 'text-[#4e6b4b]',
+  Keys: 'text-[#68703b]',
+  Bags: 'text-[#936344]',
+};
+const STATUS_TEXT_CLASSES = {
+  lost: 'text-[#a45143] dark:text-[#e39c8d]',
+  found: 'text-[#47734f] dark:text-[#a8d0ad]',
+  resolved: 'text-[#686e66] dark:text-zinc-300',
+};
+const STATUS_LIGHT_TEXT_CLASSES = {
+  lost: 'text-[#a45143]',
+  found: 'text-[#47734f]',
+  resolved: 'text-[#686e66]',
 };
 const toWorldPixel = (lat, lon, zoom) => {
   const size = 256 * (2 ** zoom);
@@ -91,6 +132,17 @@ const withMapFields = (item) => {
     landmark: item.landmark?.trim() || '',
   };
 };
+const formatRelativeDate = (value) => {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((today - date) / 86_400_000);
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  return `${Math.round(days / 7)} weeks ago`;
+};
 const markerSpreadOffset = (index, count) => {
   if (count < 2) return { x: 0, y: 0 };
   const ring = Math.floor(index / 8);
@@ -125,6 +177,7 @@ const locationMapPoint = (location) => {
     'Xerox & Stationery': [46, 58], 'Post Office': [21, 58], 'Indian Bank ATM': [21, 60],
     'City Union Bank ATM': [28, 62], 'Swimming Pool': [54, 29], 'VIT Lake Parking': [48, 72],
     'Gate 2A': [15, 61], 'Gate 2B': [24, 85], 'Gate 3': [42, 89], 'Gate 3A': [71, 89], 'Gate 11': [77, 62],
+    'Bus Stand': [19, 64],
   };
   if (namedPoints[location]) return { x: namedPoints[location][0], y: namedPoints[location][1] };
   if (location.startsWith('MH ')) {
@@ -140,113 +193,7 @@ const locationMapPoint = (location) => {
   return { x: 50, y: 50 };
 };
 
-// Mock Items with robust, high-availability image links
-const INITIAL_ITEMS = [
-  {
-    id: 1,
-    title: 'AUKEY Omnia Mini 20W USB-C Charger',
-    category: 'Electronics',
-    location: 'SJT (Silver Jubilee Tower)',
-    coordinates: { x: 70, y: 50 },
-    date: '2026-10-18',
-    status: 'lost',
-    description: 'White AUKEY 20W USB-C charger in its retail box. I may have left it in SJT 304 after class.',
-    image: '/items/charger-premium.jpg',
-    contact: 'student.sjt2024@vitstudent.ac.in',
-    phone: '+91 98450 12345',
-    owner: 'Rahul Sharma',
-    verifiedPin: '4821'
-  },
-  {
-    id: 2,
-    title: 'Casio Scientific Calculator',
-    category: 'Stationery',
-    location: 'TT (Technology Tower)',
-    coordinates: { x: 44, y: 55 },
-    date: '2026-10-19',
-    status: 'found',
-    description: 'Found this Casio fx-991ES Plus on a second-floor desk near the mechanical lab.',
-    image: '/items/calculator-premium.jpg',
-    contact: 'guard.tt@vit.ac.in',
-    phone: '+91 94431 88990',
-    owner: 'Campus Security Desk',
-    verifiedPin: '1122'
-  },
-  {
-    id: 3,
-    title: 'Dorm Room Keys (Set of 3)',
-    category: 'Keys',
-    location: 'MH Q Block',
-    coordinates: { x: 68, y: 28 },
-    date: '2026-10-17',
-    status: 'lost',
-    description: 'Three brass keys on a blue fabric loop. I last had them near MH Q Block.',
-    image: '/items/keys-premium.jpg',
-    contact: 'hostel.q@vitstudent.ac.in',
-    phone: '+91 97890 55441',
-    owner: 'Aditya Verma',
-    verifiedPin: '9988'
-  },
-  {
-    id: 4,
-    title: 'Titan Analog Wristwatch',
-    category: 'Accessories',
-    location: 'Central Library (Periyar EVR)',
-    coordinates: { x: 29, y: 76 },
-    date: '2026-10-16',
-    status: 'found',
-    description: 'Found a silver Titan watch with a navy face on reading table 14 and left it at the library desk.',
-    image: '/items/watch-premium.jpg',
-    contact: 'library.desk@vit.ac.in',
-    phone: '+91 91234 56789',
-    owner: 'Library Admin',
-    verifiedPin: '3344'
-  },
-  {
-    id: 5,
-    title: 'Blue Hydro Flask Water Bottle',
-    category: 'Personal',
-    location: 'Woodys',
-    coordinates: { x: 35, y: 63 },
-    date: '2026-10-19',
-    status: 'lost',
-    description: 'I left my blue insulated bottle near Woody’s after lunch. It has a couple of small tech stickers on it.',
-    image: '/items/bottle-premium.jpg',
-    contact: 'priya.m2023@vitstudent.ac.in',
-    phone: '+91 95001 22334',
-    owner: 'Priya Mohan',
-    verifiedPin: '7766'
-  }
-];
-
-// Additional campus reports include a few duplicate names for search testing.
-const ADDITIONAL_ITEMS = [
-  { id: 8, title: 'Casio Scientific Calculator', category: 'Stationery', location: 'PRP C Block', status: 'lost', date: '2026-10-19', description: 'I left my black Casio in PRP C Block. There’s a small scratch on the back cover.', image: '/items/calculator.jpg', coordinates: locationMapPoint('PRP C Block') },
-  { id: 13, title: 'Titan Analog Wristwatch', category: 'Accessories', location: 'TT (Technology Tower)', status: 'found', date: '2026-10-18', description: 'Found a blue-dial watch on a classroom desk near the stairwell in TT.', image: '/items/watch.jpg', coordinates: locationMapPoint('TT (Technology Tower)') },
-  { id: 16, title: 'USB-C Laptop Charger', category: 'Electronics', location: 'Food Court', status: 'found', date: '2026-10-19', description: 'A compact USB-C charger was left by the Food Court seating. I handed it in at the counter.', image: '/items/charger.jpg', coordinates: locationMapPoint('Food Court') },
-  { id: 17, title: 'Scientific Calculator', category: 'Stationery', location: 'MGR Main Building', status: 'lost', date: '2026-10-16', description: 'Dark scientific calculator with a sliding cover. I last used it in the MGR building.', image: '/items/calculator-alt.jpg', coordinates: locationMapPoint('MGR Main Building') },
-  { id: 18, title: 'Key Ring with Room Keys', category: 'Keys', location: 'LH A Block', status: 'found', date: '2026-10-19', description: 'Small key ring with two room keys found by the common room.', image: '/items/keys.jpg', coordinates: locationMapPoint('LH A Block') },
-  { id: 19, title: 'Silver Wristwatch', category: 'Accessories', location: 'SJT Ground', status: 'lost', date: '2026-10-15', description: 'Silver analog watch with a navy dial, last noticed near the ground.', image: '/items/watch-alt.jpg', coordinates: locationMapPoint('SJT Ground') },
-  { id: 20, title: 'Insulated Water Bottle', category: 'Personal', location: 'Nescafe', status: 'found', date: '2026-10-18', description: 'Blue metal water bottle found near the Nescafe counter.', image: '/items/bottle.jpg', coordinates: locationMapPoint('Nescafe') },
-  { id: 21, title: 'Wireless Earbuds and Case', category: 'Electronics', location: 'SJT (Silver Jubilee Tower)', status: 'lost', date: '2026-10-19', description: 'White wireless earbuds in a charging case, last seen near a lecture hall.', image: '/items/earbuds.jpg', coordinates: locationMapPoint('SJT (Silver Jubilee Tower)'), owner: 'Kiran R.', contact: 'kiran@example.com', shareContact: true },
-  { id: 22, title: 'Wireless Earbuds and Case', category: 'Electronics', location: 'Food Street', status: 'found', date: '2026-10-18', description: 'White earbud case found on a table near the food stalls.', image: '/items/earbuds-alt.jpg', coordinates: locationMapPoint('Food Street'), owner: 'Meera S.', contact: 'meera@example.com', shareContact: true },
-  { id: 23, title: 'Brown Leather Wallet', category: 'Accessories', location: 'MH Q Block', status: 'lost', date: '2026-10-19', description: 'Slim brown leather wallet, last seen around the hostel common area.', image: '/items/wallet.jpg', coordinates: locationMapPoint('MH Q Block'), owner: 'Arjun M.', contact: 'arjun@example.com', shareContact: true },
-  { id: 24, title: 'Brown Leather Wallet', category: 'Accessories', location: 'Central Library (Periyar EVR)', status: 'found', date: '2026-10-18', description: 'Brown card wallet found beside the quiet study desks.', image: '/items/wallet-alt.jpg', coordinates: locationMapPoint('Central Library (Periyar EVR)') },
-  { id: 25, title: 'Red Campus Backpack', category: 'Personal', location: 'TT (Technology Tower)', status: 'lost', date: '2026-10-19', description: 'Red backpack with a laptop sleeve, last seen near the classroom block.', image: '/items/backpack.jpg', coordinates: locationMapPoint('TT (Technology Tower)'), owner: 'Diya P.', contact: 'diya@example.com', shareContact: true },
-  { id: 27, title: 'Spiral Lecture Notebook', category: 'Stationery', location: 'PRP B Block', status: 'lost', date: '2026-10-19', description: 'A5 ruled notebook with a dark cover and handwritten class notes.', image: '/items/notebook.jpg', coordinates: locationMapPoint('PRP B Block'), owner: 'Nikhil V.', contact: 'nikhil@example.com', shareContact: true },
-  { id: 29, title: 'Black Frame Sunglasses', category: 'Accessories', location: 'SJT Ground', status: 'lost', date: '2026-10-19', description: 'Black framed sunglasses in a slim case, last seen near the ground.', image: '/items/sunglasses.jpg', coordinates: locationMapPoint('SJT Ground') },
-];
-
-// A compact first-run board shows the main categories and both lost/found flows.
-// Real reports loaded from the database are added alongside these local examples.
-const PREVIEW_ITEMS = [
-  ...INITIAL_ITEMS,
-  ADDITIONAL_ITEMS[0],
-  ADDITIONAL_ITEMS[7],
-  ADDITIONAL_ITEMS[8],
-];
-
-const RESOLVED_ITEMS_KEY = 'vit-lost-and-found:resolved-items';
+const RESOLVED_ITEMS_KEY = 'vit-lost-and-found:resolved-items-seed-v2';
 const readResolvedItems = () => {
   try { return JSON.parse(localStorage.getItem(RESOLVED_ITEMS_KEY) || '{}'); }
   catch { return {}; }
@@ -264,7 +211,11 @@ const SUCCESS_MESSAGES = [
 export default function App() {
   const [items, setItems] = useState(() => {
     const resolved = readResolvedItems();
-    return PREVIEW_ITEMS.map(item => withMapFields(resolved[item.id] ? { ...item, status: 'resolved', resolvedAt: resolved[item.id] } : item));
+    return isSupabaseConfigured ? [] : SEED_ITEMS.map(item => withMapFields({
+      ...item,
+      image: item.image ?? `/items/${item.id}.jpg`,
+      ...(resolved[item.id] ? { status: 'resolved', resolvedAt: resolved[item.id] } : {}),
+    }));
   });
   const [mapClock, setMapClock] = useState(Date.now());
   const [searchTerm, setSearchTerm] = useState('');
@@ -315,6 +266,7 @@ export default function App() {
     location: 'SJT (Silver Jubilee Tower)',
     status: 'lost',
     description: '',
+    time: '',
     image: '',
     floor: '',
     landmark: '',
@@ -349,7 +301,10 @@ export default function App() {
         })
         .catch(error => {
           console.error('Could not load reports from Supabase:', error);
-          if (active) setDatabaseError('Could not connect to the reports database. Existing preview reports are still available.');
+          if (active) {
+            setItems(SEED_ITEMS.map(item => withMapFields(item)));
+            setDatabaseError('Could not connect to the reports database. Showing the local campus listings instead.');
+          }
         })
         .finally(() => { if (active) setIsInitialLoading(false); });
       return () => { active = false; };
@@ -382,8 +337,8 @@ export default function App() {
       const fit = BASE_ZOOM + Math.log2(Math.min(width / (east - west), height / (south - north)));
       const nextMinZoom = Math.max(1, Math.min(MAX_ZOOM, Math.floor(fit * 4) / 4));
       setMapMinZoom(nextMinZoom);
-      // Start one step inside the campus so users can immediately drag to explore.
-      const nextZoom = Math.max(nextMinZoom + 1, Math.min(mapZoomRef.current, MAX_ZOOM));
+      // Open at the full-campus fit (or the saved closer zoom after returning to the map).
+      const nextZoom = Math.max(nextMinZoom, Math.min(mapZoomRef.current, MAX_ZOOM));
       setMapZoom(nextZoom);
       setMapCenter(center => clampMapCenter(center, nextZoom, width, height));
     };
@@ -553,6 +508,7 @@ export default function App() {
         building: formData.location,
         coordinates,
         date: new Date().toISOString().split('T')[0],
+        time: formData.time.trim() || 'Time not provided',
         image,
       });
       if (isSupabaseConfigured) {
@@ -569,7 +525,7 @@ export default function App() {
     setIsReportModalOpen(false);
     setFormData({
       title: '', category: 'Electronics', location: 'SJT (Silver Jubilee Tower)',
-      status: 'lost', description: '', image: '', floor: '', landmark: '', owner: '', phone: '', contact: '', shareContact: false, verifiedPin: '1234'
+      status: 'lost', description: '', time: '', image: '', floor: '', landmark: '', owner: '', phone: '', contact: '', shareContact: false, verifiedPin: '1234'
     });
     setSuccessBanner("Your item has been successfully shared with the VIT community!");
     setTimeout(() => setSuccessBanner(''), 5000);
@@ -674,7 +630,7 @@ export default function App() {
       </header>
 
       {/* Main Container */}
-      <main className="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8 lg:py-10">
+      <main className="mx-auto max-w-[1536px] px-4 py-7 sm:px-6 lg:px-8 lg:py-10">
 
         {/* Campus welcome panel */}
         <section className={`relative mb-7 overflow-hidden rounded-[2rem] px-6 py-8 shadow-xl sm:px-10 sm:py-11 lg:px-14 ${darkMode ? 'bg-zinc-900' : 'bg-[#19372e]'}`}>
@@ -683,7 +639,7 @@ export default function App() {
           <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
             <div className="max-w-2xl">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#f3b879]"><Sparkles className="h-3.5 w-3.5" /> VIT Vellore community board</div>
-              <h2 className="max-w-xl text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">Lost something?<br /><span className="text-[#f0ad70]">Let’s bring it home.</span></h2>
+              <h2 className="max-w-xl text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">Lost on campus?<br /><span className="text-[#f0ad70]">Your VIT community can help.</span></h2>
               <p className="mt-4 max-w-lg text-sm leading-6 text-white/70 sm:text-base">A simple, trusted place to reconnect campus belongings with the people who miss them.</p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <button type="button" onClick={() => setIsReportModalOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-[#ef9c55] px-5 py-3 text-sm font-bold text-[#19372e] transition hover:bg-[#f6b578]"><Plus className="h-4 w-4" /> Post a report</button>
@@ -713,19 +669,6 @@ export default function App() {
               />
             </div>
 
-            <div role="group" aria-label="Filter reports by status" className={`flex p-1 rounded-xl border ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-100 border-zinc-200'}`}>
-              {['all', 'lost', 'found', 'resolved'].map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                  aria-pressed={statusFilter === status}
-                  className={`rounded-lg px-4 py-1.5 text-xs font-semibold capitalize transition-all ${statusFilter === status ? (darkMode ? 'bg-cyan-500 text-zinc-950 shadow' : 'bg-[#24483a] text-white shadow') : darkMode ? 'text-zinc-400 hover:text-white' : 'text-[#68776c] hover:text-[#19372e]'}`}
-                >
-                  {status}
-                </button>
-              ))}
-            </div>
-
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
               <select
                 aria-label="Filter by category"
@@ -737,8 +680,11 @@ export default function App() {
                 <option value="Electronics">Electronics</option>
                 <option value="Stationery">Stationery</option>
                 <option value="Keys">Keys</option>
-                <option value="Accessories">Accessories</option>
                 <option value="Personal">Personal</option>
+                <option value="ID & Cards">ID &amp; Cards</option>
+                <option value="Books">Books</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Bags">Bags</option>
               </select>
 
               <select
@@ -768,7 +714,7 @@ export default function App() {
                 disabled={isInitialLoading}
                 className={`rounded-xl border px-3 py-2 text-xs font-medium transition disabled:cursor-wait ${darkMode ? 'border-zinc-700 text-zinc-300 hover:border-cyan-500/50 hover:text-cyan-300 disabled:text-zinc-500' : 'border-zinc-200 text-zinc-700 hover:border-cyan-500 hover:text-cyan-700 disabled:text-zinc-400'}`}
               >
-                {isInitialLoading ? 'Loading…' : 'Preview loading state'}
+                {isInitialLoading ? 'Loading...' : 'Preview loading state'}
               </button>
 
               <div className={`flex p-1 rounded-xl border ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-100 border-zinc-200'}`}>
@@ -804,6 +750,15 @@ export default function App() {
           <span className={`text-sm ${darkMode ? 'text-zinc-400' : 'text-[#768178]'}`}>{filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'} to explore</span>
         </div>}
 
+        {activeTab === 'grid' && <div className="mb-6 space-y-3">
+          <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter reports by category">
+            {['All', ...Object.keys(CATEGORY_BADGE_CLASSES)].map(category => <button key={category} type="button" onClick={() => setCategoryFilter(category)} aria-pressed={categoryFilter === category} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition hover:brightness-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#668271] ${category === 'All' ? (categoryFilter === 'All' ? 'border-[#24483a] bg-[#24483a] text-white' : darkMode ? 'border-zinc-700 bg-zinc-900 text-zinc-300' : 'border-[#dfddd3] bg-[#fffefa] text-[#64746a]') : `${CATEGORY_BADGE_CLASSES[category]} ${categoryFilter === category ? 'ring-2 ring-[#e9954e] ring-offset-1 dark:ring-offset-zinc-950' : ''}`}`}>{category}</button>)}
+          </div>
+          <div className="flex items-center gap-2" role="group" aria-label="Show lost or found reports">
+            {[['all', 'All items'], ['lost', 'Lost'], ['found', 'Found'], ['resolved', 'Resolved']].map(([status, label]) => <button key={status} type="button" onClick={() => setStatusFilter(status)} aria-pressed={statusFilter === status} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${statusFilter === status ? 'bg-[#ef9c55] text-[#19372e]' : darkMode ? 'text-zinc-400 hover:bg-zinc-900' : 'text-[#718077] hover:bg-white'}`}>{label}</button>)}
+          </div>
+        </div>}
+
         {/* Grid View */}
         {activeTab === 'grid' && (
           <div>
@@ -821,7 +776,7 @@ export default function App() {
                 <p className={`text-sm mt-1 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>Try adjusting your filters or search keywords.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-x-7 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
                 {sortedItems.map((item) => (
                   <div 
                     key={item.id}
@@ -830,51 +785,53 @@ export default function App() {
                     aria-label={`View details for ${item.title}, ${item.status} item at ${item.location}`}
                     onClick={() => { setSelectedItem(item); setVerifyStep(false); setEnteredPin(''); setVerifyError(''); }}
                     onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedItem(item); setVerifyStep(false); setEnteredPin(''); setVerifyError(''); } }}
-                    className={`group flex cursor-pointer flex-col justify-between overflow-hidden rounded-[1.5rem] border transition-all duration-300 hover:-translate-y-1 ${darkMode ? 'bg-zinc-900 border-zinc-800 hover:border-cyan-500/50 hover:shadow-[0_18px_45px_rgba(0,0,0,0.3)]' : 'bg-[#fffefa] border-[#e3dfd4] shadow-[0_8px_25px_rgba(34,52,41,0.05)] hover:border-[#b2c4ad] hover:shadow-[0_18px_40px_rgba(34,52,41,0.12)]'}`}
+                    className={`group flex cursor-pointer flex-col justify-between overflow-hidden rounded-[1.6rem] border transition-all duration-200 hover:-translate-y-0.5 ${darkMode ? 'bg-zinc-900 border-zinc-800 hover:border-[#668271] hover:shadow-[0_14px_32px_rgba(0,0,0,0.24)]' : 'bg-[#fffefa] border-[#e2ded4] shadow-[0_4px_16px_rgba(34,52,41,0.055)] hover:border-[#c7cbbb] hover:shadow-[0_12px_28px_rgba(34,52,41,0.1)]'}`}
                   >
                     <div>
-                      {item.image && <div className="relative h-56 overflow-hidden bg-zinc-100 dark:bg-zinc-800">
-                        <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      {item.image ? <div className="item-photo relative aspect-[16/9] overflow-hidden bg-[#e9e8df] dark:bg-zinc-800">
+                        <img src={item.image} alt={`Illustrative reference photo for ${item.title}`} loading="lazy" onError={event => event.currentTarget.closest('.item-photo')?.remove()} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
                         <div className="absolute top-3 left-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-zinc-950 shadow ${
-                            item.status === 'lost' ? 'bg-rose-500' : item.status === 'found' ? 'bg-emerald-500' : 'bg-zinc-600'
-                          }`}>
+                        <span className={`rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide ${item.status === 'lost' ? 'bg-[#ff2758] text-white' : item.status === 'found' ? 'bg-[#00bd88] text-[#073b31]' : 'bg-zinc-300 text-zinc-700'}`}>
                             {item.status}
                           </span>
                         </div>
                         <div className="absolute top-3 right-3 flex flex-col items-end gap-2">
-                          <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-black/60 text-white backdrop-blur-md">{item.category}</span>
+                          <span className="rounded-xl bg-black/65 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">{item.category}</span>
+                        </div>
+                      </div> : <div className="flex aspect-[16/9] flex-col justify-between bg-[#f4f2eb] p-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide ${item.status === 'lost' ? 'bg-[#ff2758] text-white' : item.status === 'found' ? 'bg-[#00bd88] text-[#073b31]' : 'bg-zinc-300 text-zinc-700'}`}>{item.status}</span>
+                          <span className="rounded-xl bg-[#343434] px-3 py-1.5 text-xs font-semibold text-white">{item.category}</span>
+                        </div>
+                        <div className="border-t border-[#e3dfd4] pt-3">
+                          <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#768178]">VIT Vellore · Campus report</span>
                         </div>
                       </div>}
 
-                      <div className="p-5">
-                        {!item.image && <div className="mb-3 flex flex-wrap gap-2">
-                          <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-950 ${item.status === 'lost' ? 'bg-rose-500' : item.status === 'found' ? 'bg-emerald-500' : 'bg-zinc-400'}`}>{item.status}</span>
-                          <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${darkMode ? 'bg-zinc-800 text-zinc-200' : 'bg-zinc-100 text-zinc-700'}`}>{item.category}</span>
-                        </div>}
-                        <h2 className={`mb-1 line-clamp-1 text-base font-bold transition-colors ${darkMode ? 'group-hover:text-cyan-400' : 'group-hover:text-[#53735d]'}`}>
+                      <div className="px-6 pb-5 pt-6">
+                        <h2 className={`mb-1.5 line-clamp-1 text-[19px] font-semibold tracking-[-0.02em] transition-colors ${darkMode ? 'group-hover:text-cyan-400' : 'group-hover:text-[#53735d]'}`}>
                           {item.title}
                         </h2>
-                        <p className={`text-xs line-clamp-2 mb-4 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                        <p className={`mb-5 line-clamp-2 min-h-10 text-sm leading-5 ${darkMode ? 'text-zinc-400' : 'text-[#657168]'}`}>
                           {item.description}
                         </p>
 
-                        <div className={`space-y-2 text-xs pt-3 border-t ${darkMode ? 'border-zinc-800 text-zinc-400' : 'border-zinc-100 text-zinc-600'}`}>
+                        <div className={`space-y-2.5 border-t pt-3.5 text-sm ${darkMode ? 'border-zinc-800 text-zinc-400' : 'border-[#f0eee8] text-[#526058]'}`}>
                           <div className="flex items-center gap-2">
                             <MapPin className={`h-4 w-4 shrink-0 ${darkMode ? 'text-cyan-500' : 'text-[#71866d]'}`} />
                             <span className="truncate font-medium">{item.location}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-teal-500 shrink-0" />
-                            <span>Reported on {item.date}</span>
+                            <span title={`${item.date} · ${item.time || 'Time not provided'}`}>{formatRelativeDate(item.date)}{item.time ? ` · ${item.time}` : ''}</span>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className={`px-5 py-3.5 border-t flex items-center justify-between text-xs font-medium ${darkMode ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-100 bg-zinc-50'}`}>
-                      <span className={darkMode ? 'text-zinc-400' : 'text-zinc-600'}>Reporter identity kept private</span>
-                      <span className={`flex items-center gap-1 group-hover:underline ${darkMode ? 'text-cyan-400' : 'text-[#b56c36]'}`}>
+                    <div className={`flex items-center justify-between border-t px-6 py-4 text-sm font-medium ${darkMode ? 'border-zinc-800 bg-zinc-900/50' : 'border-[#f0eee8] bg-[#faf9f6]'}`}>
+                      <span className={darkMode ? 'text-zinc-400' : 'text-[#737b73]'}>Reporter identity kept private</span>
+                      <span className={`flex items-center gap-1 group-hover:underline ${darkMode ? 'text-[#a4bdaa]' : 'text-[#8c5935]'}`}>
                         View Details & Claim <ArrowRight className="w-3.5 h-3.5" />
                       </span>
                     </div>
@@ -887,13 +844,13 @@ export default function App() {
 
         {/* Campus map */}
         {activeTab === 'map' && (
-          <div className={`overflow-hidden rounded-3xl border shadow-xl ${darkMode ? 'border-zinc-800 bg-zinc-900' : 'border-zinc-200 bg-white'}`}>
-            <div className="flex items-center justify-between border-b px-5 py-4">
+          <div className={`mx-auto max-w-[900px] overflow-hidden rounded-3xl border shadow-xl ${darkMode ? 'border-zinc-800 bg-zinc-900' : 'border-[#e3dfd4] bg-[#fffefa] shadow-[0_12px_36px_rgba(34,52,41,0.08)]'}`}>
+            <div className={`flex items-center justify-between border-b px-5 py-4 ${darkMode ? 'border-zinc-800' : 'border-[#e8e4da]'}`}>
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-50 text-cyan-700"><Navigation className="h-5 w-5" /></span>
-                <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">VIT Vellore &middot; Lost &amp; Found</h2>
+                <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${darkMode ? 'bg-[#243a37] text-[#a4bdaa]' : 'bg-[#e8f0ee] text-[#49685c]'}`}><Navigation className="h-5 w-5" /></span>
+                <div><h2 className={`font-semibold ${darkMode ? 'text-zinc-100' : 'text-[#19372e]'}`}>VIT Vellore · Campus map</h2><p className={`mt-0.5 text-xs ${darkMode ? 'text-zinc-400' : 'text-[#768178]'}`}>Lost &amp; found reports around campus</p></div>
               </div>
-              <span className="hidden rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-600 sm:inline-flex">{mapItems.length} matching reports</span>
+              <span className={`hidden rounded-full border px-3 py-1.5 text-xs font-medium sm:inline-flex ${darkMode ? 'border-zinc-700 bg-zinc-800 text-zinc-300' : 'border-[#e5e1d7] bg-[#f7f6f0] text-[#64746a]'}`}>{mapItems.length} matching reports</span>
             </div>
 
             {(() => {
@@ -946,19 +903,19 @@ export default function App() {
                 tabIndex={0}
                 aria-label="Interactive VIT campus map. Drag to pan after zooming in. Use plus and minus keys to zoom."
                 style={{ aspectRatio: `${CAMPUS_ASPECT_RATIO} / 1` }}
-                className={`relative mx-auto w-full max-w-[900px] touch-none overflow-hidden bg-[#e8eef0] outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 ${isDraggingMap ? 'cursor-grabbing' : 'cursor-grab'}`}
+                className={`relative w-full touch-none overflow-hidden bg-[#e8eef0] outline-none focus-visible:ring-2 focus-visible:ring-[#668271] dark:focus-visible:ring-[#a4bdaa] ${isDraggingMap ? 'cursor-grabbing' : 'cursor-grab'}`}
               >
                 <div className="absolute inset-0" style={{ clipPath: campusClip }}>
                 {tiles.map(tile => <img key={tile.key} draggable="false" decoding="async" src={tile.url} alt="" className="pointer-events-none absolute max-w-none select-none" style={{ width: `${tileSize}px`, height: `${tileSize}px`, left: `calc(50% + ${tile.x}px)`, top: `calc(50% + ${tile.y}px)`, transition: isDraggingMap ? 'none' : `left ${FLY_MS}ms ease-out, top ${FLY_MS}ms ease-out, width ${FLY_MS}ms ease-out, height ${FLY_MS}ms ease-out` }} />)}
                 </div>
 
-                <MapSearch items={mapItems} value={searchTerm} onChange={value => { setSearchTerm(value); setFocusedSearchId(null); }} onSelectItem={focusSearchResult} />
+                <MapSearch items={mapItems} value={searchTerm} onChange={value => { setSearchTerm(value); setFocusedSearchId(null); }} onSelectItem={focusSearchResult} darkMode={darkMode} />
 
-                <div className={`absolute right-4 top-4 z-20 flex flex-col overflow-hidden rounded-xl shadow-lg ring-1 ${darkMode ? 'bg-zinc-900 ring-zinc-700' : 'bg-white ring-black/5'}`} data-map-control>
-                  <button type="button" aria-label="Zoom in" title="Zoom in" disabled={mapZoom >= MAX_ZOOM} onPointerDown={event => event.stopPropagation()} onClick={() => handleMapZoom(1)} className={`p-3 transition ${darkMode ? 'text-zinc-200 hover:bg-zinc-800 disabled:text-zinc-600' : 'text-zinc-700 hover:bg-zinc-50 disabled:text-zinc-300'}`}><ZoomIn className="h-5 w-5" /></button>
-                  <span className={`border-y py-1 text-center text-[10px] font-medium ${darkMode ? 'border-zinc-700 text-zinc-400' : 'border-zinc-100 text-zinc-600'}`}>z{mapZoom}</span>
-                  <button type="button" aria-label="Zoom out" title="Zoom out" disabled={mapZoom <= mapMinZoom} onPointerDown={event => event.stopPropagation()} onClick={() => handleMapZoom(-1)} className={`p-3 transition ${darkMode ? 'text-zinc-200 hover:bg-zinc-800 disabled:text-zinc-600' : 'text-zinc-700 hover:bg-zinc-50 disabled:text-zinc-300'}`}><ZoomOut className="h-5 w-5" /></button>
-                   <button type="button" aria-label="Show full campus" title="Show full campus" onPointerDown={event => event.stopPropagation()} onClick={() => { setMapZoom(mapMinZoom); setMapCenter(INITIAL_MAP_CENTER); setSearchTerm(''); setFocusedSearchId(null); setFocusedMapItem(null); }} className={`border-t p-3 transition ${darkMode ? 'border-zinc-700 text-zinc-200 hover:bg-zinc-800' : 'border-zinc-100 text-zinc-700 hover:bg-zinc-50'}`}><Compass className="h-5 w-5" /></button>
+                <div className={`absolute right-4 top-4 z-20 flex flex-col overflow-hidden rounded-2xl border shadow-lg ${darkMode ? 'border-zinc-700 bg-zinc-900/95 text-zinc-200' : 'border-[#e3dfd4] bg-[#fffefa]/95 text-[#3c5146]'}`} data-map-control>
+                  <button type="button" aria-label="Zoom in" title="Zoom in" disabled={mapZoom >= MAX_ZOOM} onPointerDown={event => event.stopPropagation()} onClick={() => handleMapZoom(1)} className="p-3 transition hover:bg-[#edf3ed] disabled:opacity-35 dark:hover:bg-zinc-800"><ZoomIn className="h-5 w-5" /></button>
+                  <span className={`border-y py-1 text-center text-[10px] font-medium ${darkMode ? 'border-zinc-700 text-zinc-400' : 'border-[#e8e4da] text-[#768178]'}`}>z{mapZoom}</span>
+                  <button type="button" aria-label="Zoom out" title="Zoom out" disabled={mapZoom <= mapMinZoom} onPointerDown={event => event.stopPropagation()} onClick={() => handleMapZoom(-1)} className="p-3 transition hover:bg-[#edf3ed] disabled:opacity-35 dark:hover:bg-zinc-800"><ZoomOut className="h-5 w-5" /></button>
+                  <button type="button" aria-label="Show full campus" title="Show full campus" onPointerDown={event => event.stopPropagation()} onClick={() => { setMapZoom(mapMinZoom); setMapCenter(INITIAL_MAP_CENTER); setSearchTerm(''); setFocusedSearchId(null); setFocusedMapItem(null); }} className={`border-t p-3 transition hover:bg-[#edf3ed] dark:hover:bg-zinc-800 ${darkMode ? 'border-zinc-700' : 'border-[#e8e4da]'}`}><Compass className="h-5 w-5" /></button>
                 </div>
 
                 <div className="absolute inset-0" style={{ clipPath: campusClip }}>
@@ -971,32 +928,32 @@ export default function App() {
                   const top = position.y - centerPixel.y + spread.y;
                   const fields = getMapItemFields(item);
                   return <div key={item.id} className="absolute z-10 -translate-x-1/2 -translate-y-1/2" style={{ left: `calc(50% + ${left}px)`, top: `calc(50% + ${top}px)`, transition: isDraggingMap ? 'none' : `left ${FLY_MS}ms ease-out, top ${FLY_MS}ms ease-out` }}>
-                    <button type="button" data-map-marker onPointerDown={event => event.stopPropagation()} onMouseDown={event => event.stopPropagation()} onClick={() => setFocusedMapItem(item)} style={{ animationDelay: `${(markerIndex % 8) * 110}ms` }} className={`group flex h-9 w-9 animate-marker-float items-center justify-center rounded-full border-[3px] border-white text-sm font-bold text-white shadow-lg transition group-hover:scale-110 ${focusedSearchId === item.id ? 'ring-4 ring-cyan-300 ring-offset-2' : ''} ${item.status === 'resolved' ? 'bg-zinc-600' : item.status === 'lost' ? 'bg-rose-600' : 'bg-emerald-600'}`} aria-label={`Show ${fields.name} on map, report ${samePlaceIndex + 1} of ${samePlaceItems.length} at ${fields.building}`}>
+                    <button type="button" data-map-marker onPointerDown={event => event.stopPropagation()} onMouseDown={event => event.stopPropagation()} onClick={() => setFocusedMapItem(item)} style={{ animationDelay: `${(markerIndex % 8) * 110}ms` }} className={`group flex h-9 w-9 animate-marker-float items-center justify-center rounded-full border-[3px] border-white text-sm font-bold text-white shadow-md transition group-hover:scale-110 ${focusedSearchId === item.id ? 'ring-4 ring-[#e2a267] ring-offset-2' : ''} ${item.status === 'resolved' ? 'bg-[#787d74]' : item.status === 'lost' ? 'bg-[#a75c49]' : 'bg-[#54755a]'}`} aria-label={`Show ${fields.name} on map, report ${samePlaceIndex + 1} of ${samePlaceItems.length} at ${fields.building}`}>
                       {item.status === 'lost' ? '!' : <Check className="h-4 w-4" />}
                     </button>
-                    {focusedMapItem?.id === item.id && <div data-map-control className={`absolute bottom-full left-1/2 mb-3 w-64 -translate-x-1/2 rounded-xl p-4 text-left shadow-xl ring-1 ${darkMode ? 'bg-zinc-900 text-zinc-100 ring-zinc-700' : 'bg-white text-zinc-800 ring-black/10'}`}>
-                      <button type="button" aria-label="Close map popup" onClick={() => setFocusedMapItem(null)} className={`absolute right-2 top-2 rounded p-1 ${darkMode ? 'text-zinc-300 hover:bg-zinc-800' : 'text-zinc-600 hover:bg-zinc-100'}`}><X className="h-4 w-4" /></button>
+                    {focusedMapItem?.id === item.id && <div data-map-control className={`absolute bottom-full left-1/2 mb-3 w-64 -translate-x-1/2 rounded-2xl border p-4 text-left shadow-xl ${darkMode ? 'border-zinc-700 bg-zinc-900 text-zinc-100' : 'border-[#e3dfd4] bg-[#fffefa] text-[#19372e]'}`}>
+                      <button type="button" aria-label="Close map popup" onClick={() => setFocusedMapItem(null)} className={`absolute right-2 top-2 rounded p-1 ${darkMode ? 'text-zinc-300 hover:bg-zinc-800' : 'text-[#768178] hover:bg-[#edf3ed]'}`}><X className="h-4 w-4" /></button>
                       <p className="pr-6 text-sm font-bold">{fields.name}</p>
-                      <p className={`mt-2 text-xs ${darkMode ? 'text-zinc-300' : 'text-zinc-600'}`}>{fields.building}</p>
-                      <p className={`mt-1 text-xs ${darkMode ? 'text-zinc-300' : 'text-zinc-600'}`}>Floor: {fields.floor}</p>
-                      {fields.landmark && <p className={`mt-1 text-xs ${darkMode ? 'text-zinc-300' : 'text-zinc-600'}`}>Near {fields.landmark}</p>}
-                      <button type="button" onClick={() => { setSelectedItem(item); setVerifyStep(false); setEnteredPin(''); setVerifyError(''); }} className="mt-3 text-xs font-semibold text-cyan-700 hover:underline dark:text-cyan-400">View report</button>
+                      <p className={`mt-2 text-xs ${darkMode ? 'text-zinc-300' : 'text-[#5f6d62]'}`}>{fields.building}</p>
+                      <p className={`mt-1 text-xs ${darkMode ? 'text-zinc-300' : 'text-[#5f6d62]'}`}>Floor: {fields.floor}</p>
+                      {fields.landmark && <p className={`mt-1 text-xs ${darkMode ? 'text-zinc-300' : 'text-[#5f6d62]'}`}>Near {fields.landmark}</p>}
+                      <button type="button" onClick={() => { setSelectedItem(item); setVerifyStep(false); setEnteredPin(''); setVerifyError(''); }} className="mt-3 text-xs font-semibold text-[#49685c] hover:underline dark:text-[#a4bdaa]">View report</button>
                     </div>}
                   </div>;
                 })}
                 {mapItems.length === 0 && <div className="absolute inset-x-4 top-1/2 z-10 -translate-y-1/2 text-center">
-                  <p className={`mx-auto inline-block rounded-xl px-4 py-3 text-sm font-medium shadow-lg ${darkMode ? 'bg-zinc-900/95 text-zinc-200' : 'bg-white/95 text-zinc-700'}`}>
+                  <p className={`mx-auto inline-block rounded-2xl border px-4 py-3 text-sm font-medium shadow-lg ${darkMode ? 'border-zinc-700 bg-zinc-900/95 text-zinc-200' : 'border-[#e3dfd4] bg-[#fffefa]/95 text-[#3c5146]'}`}>
                     No items match the selected filters{locationFilter !== 'All' ? ` at ${locationFilter}` : ''}.
                   </p>
                 </div>}
                 </div>
 
-                <div className={`absolute bottom-4 left-4 z-20 flex items-center gap-4 rounded-xl px-4 py-3 text-xs font-medium shadow-lg ${darkMode ? 'bg-zinc-900/95 text-zinc-200' : 'bg-white/95 text-zinc-700'}`} data-map-control>
-                  <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-rose-600" />Lost</span>
-                  <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-emerald-600" />Found</span>
-                  <span className={darkMode ? 'text-zinc-400' : 'text-zinc-600'}>Drag the map to explore. Zoom in to pan; use the controls to zoom.</span>
+                <div className={`absolute bottom-4 left-4 z-20 flex max-w-[calc(100%-5rem)] flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border px-4 py-3 text-xs font-medium shadow-lg backdrop-blur-sm ${darkMode ? 'border-zinc-700 bg-zinc-900/95 text-zinc-200' : 'border-[#e3dfd4] bg-[#fffefa]/95 text-[#3c5146]'}`} data-map-control>
+                  <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-[#a75c49]" />Lost</span>
+                  <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-[#54755a]" />Found</span>
+                  <span className={`hidden md:inline ${darkMode ? 'text-zinc-400' : 'text-[#768178]'}`}>Drag to explore · Zoom with the controls</span>
                 </div>
-                <div className={`absolute bottom-2 right-2 z-10 rounded px-2 py-1 text-[10px] ${darkMode ? 'bg-zinc-900/90 text-zinc-300' : 'bg-white/90 text-zinc-600'}`}>&copy; OpenStreetMap contributors</div>
+                <div className={`absolute bottom-2 right-2 z-10 rounded-lg px-2 py-1 text-[10px] ${darkMode ? 'bg-zinc-900/90 text-zinc-300' : 'bg-[#fffefa]/90 text-[#657168]'}`}>&copy; OpenStreetMap contributors</div>
               </div>;
             })()}
           </div>
@@ -1008,7 +965,7 @@ export default function App() {
           <div role="dialog" aria-modal="true" aria-labelledby="selected-item-title" className={`w-full max-w-lg rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[90vh] ${darkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-100 text-zinc-800'}`}>
             
             {selectedItem.image && <div className="relative h-56 bg-zinc-100 dark:bg-zinc-800 shrink-0">
-              <img src={selectedItem.image} alt={selectedItem.title} className="w-full h-full object-cover" />
+              <img src={selectedItem.image} alt={`Illustrative reference photo for ${selectedItem.title}`} loading="lazy" onError={event => event.currentTarget.remove()} className="h-full w-full object-cover" />
               <button 
                 onClick={() => { setSelectedItem(null); setVerifyStep(false); }}
                 aria-label="Close item details"
@@ -1126,7 +1083,7 @@ export default function App() {
             
             <div className="p-5 border-b flex items-center justify-between">
               <h2 id="report-modal-title" className="font-bold text-lg flex items-center gap-2">
-                <Plus className="w-5 h-5 text-cyan-500" /> Report Lost or Found Item
+                <Plus className={`h-5 w-5 ${darkMode ? 'text-[#e8ad77]' : 'text-[#a9683a]'}`} /> Report Lost or Found Item
               </h2>
               <button onClick={() => setIsReportModalOpen(false)} aria-label="Close report form" className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800">
                 <X className="w-5 h-5" />
@@ -1158,8 +1115,11 @@ export default function App() {
                     <option value="Electronics">Electronics</option>
                     <option value="Stationery">Stationery</option>
                     <option value="Keys">Keys</option>
-                    <option value="Accessories">Accessories</option>
                     <option value="Personal">Personal</option>
+                    <option value="ID & Cards">ID &amp; Cards</option>
+                    <option value="Books">Books</option>
+                    <option value="Clothing">Clothing</option>
+                    <option value="Bags">Bags</option>
                   </select>
                 </div>
               </div>
@@ -1190,6 +1150,9 @@ export default function App() {
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider">Approx. time seen (optional)
+                  <input value={formData.time} onChange={event => setFormData({ ...formData, time: event.target.value })} placeholder="e.g. around 1:30 PM" className={`mt-1 w-full rounded-xl border p-3 text-sm font-normal normal-case tracking-normal ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200'}`} />
+                </label>
                 <label className="block text-xs font-semibold uppercase tracking-wider">Floor (optional)
                   <input value={formData.floor} onChange={event => setFormData({ ...formData, floor: event.target.value })} placeholder="e.g. 2nd floor" className={`mt-1 w-full rounded-xl border p-3 text-sm font-normal normal-case tracking-normal ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200'}`} />
                 </label>
@@ -1198,7 +1161,7 @@ export default function App() {
                 </label>
               </div>
 
-              <p className={`rounded-xl border p-3 text-xs leading-relaxed ${darkMode ? 'border-cyan-900 bg-cyan-950/50 text-cyan-200' : 'border-cyan-100 bg-cyan-50 text-cyan-800'}`}>Avoid personal details in photos. {isSupabaseConfigured ? 'Reports and uploaded photos are saved to the campus database; contact details are visible only when you choose to share them.' : 'This preview keeps reports in this browser session. Connect the database to share reports across devices.'}</p>
+              <p className={`rounded-xl border p-3 text-xs leading-relaxed ${darkMode ? 'border-[#3c5955] bg-[#243a37] text-[#c5dcda]' : 'border-[#d5e1d7] bg-[#edf3ed] text-[#42604d]'}`}>Avoid personal details in photos. {isSupabaseConfigured ? 'Reports and uploaded photos are saved to the campus database; contact details are visible only when you choose to share them.' : 'This preview keeps reports in this browser session. Connect the database to share reports across devices.'}</p>
 
               <section className={`space-y-3 rounded-xl border p-4 ${darkMode ? 'border-zinc-700 bg-zinc-800/60' : 'border-zinc-200 bg-zinc-50'}`}>
                 <div><h3 className="text-sm font-semibold">Contact details <span className={darkMode ? 'font-normal text-zinc-400' : 'font-normal text-zinc-600'}>(optional)</span></h3><p className={`mt-1 text-xs ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>These stay private unless you choose to share them on the report.</p></div>
@@ -1212,10 +1175,10 @@ export default function App() {
               </section>
 
               <div>
-                <label htmlFor="report-item-image" className="mb-1 block text-xs font-semibold uppercase tracking-wider">Item photo (optional)</label>
+                <label htmlFor="report-item-image" className="mb-1 block text-xs font-semibold uppercase tracking-wider">{formData.status === 'lost' ? 'Photo of lost item (optional)' : 'Photo of found item (optional)'}</label>
                 <div className={`flex items-center gap-3 rounded-xl border border-dashed p-3 ${darkMode ? 'border-zinc-600 bg-zinc-800' : 'border-zinc-300 bg-zinc-50'}`}>
-                  {formData.image ? <img src={formData.image} alt="Selected item preview" className="h-16 w-16 rounded-lg object-cover" /> : <span className="flex h-16 w-16 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700"><Plus className="h-6 w-6" /></span>}
-                  <div className="flex-1"><label htmlFor="report-item-image" className="cursor-pointer text-sm font-semibold text-cyan-700 hover:underline dark:text-cyan-400">{formData.image ? 'Change photo' : 'Choose a photo'}</label><p className={`mt-1 text-xs ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>JPG, PNG or WEBP</p></div>
+                  {formData.image ? <img src={formData.image} alt="Selected item preview" className="h-16 w-16 rounded-lg object-cover" /> : <span className={`flex h-16 w-16 items-center justify-center rounded-lg ${darkMode ? 'bg-[#243a37] text-[#a4bdaa]' : 'bg-[#e8f0ee] text-[#49685c]'}`}><Plus className="h-6 w-6" /></span>}
+                  <div className="flex-1"><label htmlFor="report-item-image" className={`cursor-pointer text-sm font-semibold hover:underline ${darkMode ? 'text-[#a4bdaa]' : 'text-[#49685c]'}`}>{formData.image ? 'Change photo' : 'Choose a photo'}</label><p className={`mt-1 text-xs ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>Upload a photo for either a lost or found report. JPG, PNG or WEBP (up to 5 MB).</p></div>
                   {formData.image && <button type="button" onClick={() => setFormData({ ...formData, image: '' })} className="text-xs font-medium text-rose-500 hover:underline">Remove</button>}
                 </div>
                 <input id="report-item-image" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} className="sr-only" />
@@ -1236,7 +1199,7 @@ export default function App() {
 
               <button 
                 type="submit"
-                className="w-full py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-semibold shadow-md transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                className="w-full rounded-xl bg-[#e9954e] py-3.5 font-semibold text-[#19372e] shadow-sm transition hover:bg-[#f3a967] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#78947c] focus:ring-offset-2 dark:focus:ring-offset-zinc-900"
               >
                 Publish Report
               </button>

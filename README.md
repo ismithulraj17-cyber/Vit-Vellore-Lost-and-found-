@@ -19,6 +19,8 @@ npm run dev
 - `src/lib/mapSearch.js` - map search helpers.
 - `src/lib/reportsRepository.js` and `src/lib/supabaseClient.js` - Supabase report and photo access.
 - `supabase/schema.sql` - database functions, private contact storage, and photo bucket setup.
-- `public/items/` - bundled item photos used by the local preview reports.
+- `src/data/seedItems.json` - 24 privacy-safe VIT seed reports shared by the local preview and database seed script.
+- `scripts/seed.mjs` - confirms, clears, and repopulates the report table using the Supabase service role key.
+- `public/items/` - local item photos; see `PHOTO_MANIFEST.md` for the exact seed photo filenames and descriptions.
 
-Without Supabase credentials, the app runs with local preview reports. To enable shared reports and photo uploads, run `supabase/schema.sql`, copy `.env.example` to `.env.local`, and add the Supabase URL and publishable key. Add the same variables in Vercel Project Settings > Environment Variables before redeploying. Never expose a service-role key in the frontend.
+Without Supabase credentials, the app runs with the local seed reports. To enable shared reports, first apply `supabase/schema.sql` in the Supabase SQL editor, copy `.env.example` to `.env.local`, and set the project URL, publishable key, and private `SUPABASE_SERVICE_ROLE_KEY`. Run `npm run seed` and type `REPLACE ALL` when prompted; this intentionally replaces all existing report rows. Then run `npm run dev`. Never add the service-role key to Vercel or any frontend environment variable.

@@ -17,10 +17,14 @@ create table if not exists public.lost_found_reports (
   lng double precision not null,
   status text not null check (status in ('lost', 'found')),
   date date not null default current_date,
+  time text not null default 'Time not provided',
   description text not null check (char_length(description) between 5 and 1000),
   image_url text,
   created_at timestamptz not null default now()
 );
+
+alter table public.lost_found_reports
+  add column if not exists time text not null default 'Time not provided';
 
 create table if not exists private.report_contacts (
   report_id uuid primary key references public.lost_found_reports(id) on delete cascade,
@@ -35,11 +39,12 @@ alter table private.report_contacts enable row level security;
 revoke all on public.lost_found_reports from anon, authenticated;
 revoke all on private.report_contacts from anon, authenticated, public;
 
-create or replace function public.list_lost_found_reports()
+drop function if exists public.list_lost_found_reports();
+create function public.list_lost_found_reports()
 returns table (
   id uuid, title text, category text, location text, building text, floor text,
   landmark text, lat double precision, lng double precision, status text,
-  date date, description text, image_url text, owner text, phone text,
+  date date, time text, description text, image_url text, owner text, phone text,
   contact text, share_contact boolean
 )
 language sql
@@ -48,7 +53,7 @@ security definer
 set search_path = ''
 as $$
   select r.id, r.title, r.category, r.location, r.building, r.floor,
-         r.landmark, r.lat, r.lng, r.status, r.date, r.description, r.image_url,
+         r.landmark, r.lat, r.lng, r.status, r.date, r.time, r.description, r.image_url,
          case when c.share_contact then c.owner else '' end,
          case when c.share_contact then c.phone else '' end,
          case when c.share_contact then c.contact else '' end,
@@ -81,7 +86,7 @@ begin
 
   insert into public.lost_found_reports (
     title, category, location, building, floor, landmark, lat, lng,
-    status, date, description, image_url
+    status, date, time, description, image_url
   ) values (
     trim(report->>'title'), left(coalesce(report->>'category', 'Personal'), 40),
     trim(report->>'location'), coalesce(nullif(trim(report->>'building'), ''), trim(report->>'location')),
@@ -89,6 +94,7 @@ begin
     left(coalesce(report->>'landmark', ''), 160),
     (report->>'lat')::double precision, (report->>'lng')::double precision,
     report->>'status', coalesce(nullif(report->>'date', '')::date, current_date),
+    coalesce(nullif(trim(report->>'time'), ''), 'Time not provided'),
     trim(report->>'description'), nullif(report->>'image_url', '')
   ) returning id into new_report_id;
 

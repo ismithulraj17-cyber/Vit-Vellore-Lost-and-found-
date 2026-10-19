@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "seed": "node --env-file-if-exists=.env.local scripts/seed.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img" aria-labelledby="title desc">
+  <title id="title">Item photo needed</title>
+  <desc id="desc">A neutral placeholder until a photo of this item is added.</desc>
+  <rect width="960" height="600" fill="#e9eee7"/>
+  <circle cx="480" cy="270" r="92" fill="#d8e2d5"/>
+  <rect x="426" y="228" width="108" height="78" rx="14" fill="none" stroke="#55705d" stroke-width="10"/>
+  <circle cx="480" cy="267" r="20" fill="none" stroke="#55705d" stroke-width="9"/>
+  <path d="m446 228 13-18h42l13 18" fill="none" stroke="#55705d" stroke-linecap="round" stroke-linejoin="round" stroke-width="9"/>
+  <text x="480" y="400" fill="#46604d" font-family="Arial,sans-serif" font-size="24" font-weight="600" text-anchor="middle">Add an item photo</text>
+</svg>
