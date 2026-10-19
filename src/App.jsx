@@ -250,6 +250,8 @@ export default function App() {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [locationFilter, setLocationFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState('newest');
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('grid');
   const [darkMode, setDarkMode] = useState(true);
   const [mapZoom, setMapZoom] = useState(BASE_ZOOM);
@@ -307,6 +309,11 @@ export default function App() {
     const handler = setTimeout(() => setDebouncedSearch(searchTerm), 300);
     return () => clearTimeout(handler);
   }, [searchTerm]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIsInitialLoading(false), 350);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (darkMode) {
@@ -429,6 +436,19 @@ export default function App() {
     const matchesLocation = locationFilter === 'All' || item.location === locationFilter;
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
     return matchesSearch && matchesCategory && matchesLocation && matchesStatus;
+  });
+  const sortedItems = [...filteredItems].sort((first, second) => {
+    if (sortOrder === 'newest') return new Date(second.date) - new Date(first.date);
+    if (sortOrder === 'oldest') return new Date(first.date) - new Date(second.date);
+
+    const reference = locationFilter === 'All'
+      ? INITIAL_MAP_CENTER
+      : itemMapLatLon(locationMapPoint(locationFilter));
+    const distance = item => ((item.lat - reference.lat) ** 2)
+      + (((item.lng - reference.lon) * Math.cos(reference.lat * Math.PI / 180)) ** 2);
+    const search = debouncedSearch.trim().toLowerCase();
+    const relevance = item => search && item.title.toLowerCase().startsWith(search) ? 0 : 1;
+    return relevance(first) - relevance(second) || distance(first) - distance(second);
   });
   const mapItems = filteredItems.filter(item =>
     item.status !== 'resolved' || !item.resolvedAt || mapClock - item.resolvedAt < 60_000
@@ -599,7 +619,7 @@ export default function App() {
               ))}
             </div>
 
-            <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
               <select
                 aria-label="Filter by category"
                 value={categoryFilter}
@@ -622,6 +642,17 @@ export default function App() {
               >
                 <option value="All">All Locations</option>
                 {LOCATION_GROUPS.map(group => <optgroup key={group.label} label={group.label}>{group.locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}</optgroup>)}
+              </select>
+
+              <select
+                aria-label="Sort reports"
+                value={sortOrder}
+                onChange={event => setSortOrder(event.target.value)}
+                className={`py-2 px-3 rounded-xl border text-xs font-medium focus:outline-none ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-700'}`}
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="nearest">Nearest / most relevant</option>
               </select>
 
               <div className={`flex p-1 rounded-xl border ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-100 border-zinc-200'}`}>
@@ -652,7 +683,14 @@ export default function App() {
         {/* Grid View */}
         {activeTab === 'grid' && (
           <div>
-            {filteredItems.length === 0 ? (
+            {isInitialLoading ? (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading item reports" aria-busy="true">
+                {Array.from({ length: 6 }, (_, index) => <div key={index} className={`animate-pulse overflow-hidden rounded-2xl border ${darkMode ? 'border-zinc-800 bg-zinc-900' : 'border-zinc-200 bg-white'}`}>
+                  <div className={darkMode ? 'h-48 bg-zinc-800' : 'h-48 bg-zinc-200'} />
+                  <div className="space-y-3 p-5"><div className={`h-4 w-3/5 rounded ${darkMode ? 'bg-zinc-800' : 'bg-zinc-200'}`} /><div className={`h-3 w-full rounded ${darkMode ? 'bg-zinc-800' : 'bg-zinc-200'}`} /><div className={`h-3 w-2/3 rounded ${darkMode ? 'bg-zinc-800' : 'bg-zinc-200'}`} /><div className={`mt-5 h-8 rounded ${darkMode ? 'bg-zinc-800' : 'bg-zinc-200'}`} /></div>
+                </div>)}
+              </div>
+            ) : filteredItems.length === 0 ? (
               <div className={`text-center py-20 rounded-3xl border ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
                 <AlertCircle className="w-12 h-12 mx-auto mb-3 text-zinc-400" />
               <h2 className="text-lg font-semibold">No items found</h2>
@@ -660,7 +698,7 @@ export default function App() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredItems.map((item) => (
+                {sortedItems.map((item) => (
                   <div 
                     key={item.id}
                     role="button"
@@ -686,6 +724,10 @@ export default function App() {
                       </div>}
 
                       <div className="p-5">
+                        {!item.image && <div className="mb-3 flex flex-wrap gap-2">
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-950 ${item.status === 'lost' ? 'bg-rose-500' : item.status === 'found' ? 'bg-emerald-500' : 'bg-zinc-400'}`}>{item.status}</span>
+                          <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${darkMode ? 'bg-zinc-800 text-zinc-200' : 'bg-zinc-100 text-zinc-700'}`}>{item.category}</span>
+                        </div>}
                         <h2 className="font-bold text-base mb-1 group-hover:text-cyan-500 transition-colors line-clamp-1">
                           {item.title}
                         </h2>
