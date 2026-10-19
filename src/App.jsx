@@ -8,6 +8,7 @@ import {
   Sun, Moon, Compass, Filter, Sparkles, Eye, X, Check,
   ArrowRight, AlertCircle, ZoomIn, ZoomOut, Navigation
 } from 'lucide-react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 const VIT_LOCATIONS = [
   'SJT (Silver Jubilee Tower)', 'TT (Technology Tower)', 'SMV (Swami Vivekananda Block)',
@@ -1046,6 +1047,7 @@ export default function App() {
         </div>
       )}
 
+      <SpeedInsights />
     </div>
   );
 }
