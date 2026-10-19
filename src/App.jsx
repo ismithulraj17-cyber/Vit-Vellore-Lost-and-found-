@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MapSearch from './components/MapSearch';
 import { BASE_ZOOM, CAMPUS_ASPECT_RATIO, CAMPUS_BOUNDS, FLY_MS, MAX_ZOOM } from './config/mapConfig';
 import { getMapItemFields } from './lib/mapSearch';
+import { createReport, fetchReports, isSupabaseConfigured, uploadReportImage } from './lib/reportsRepository';
 import { 
   Search, Plus, MapPin, Calendar, Tag, ShieldCheck, 
   CheckCircle, AlertTriangle, 
@@ -141,13 +142,13 @@ const locationMapPoint = (location) => {
 const INITIAL_ITEMS = [
   {
     id: 1,
-    title: 'MacBook Pro Charger (USB-C)',
+    title: 'AUKEY Omnia Mini 20W USB-C Charger',
     category: 'Electronics',
     location: 'SJT (Silver Jubilee Tower)',
     coordinates: { x: 70, y: 50 },
     date: '2026-10-18',
     status: 'lost',
-    description: 'Apple 61W USB-C power adapter with a braided cable. Left in SJT 304 lecture hall.',
+    description: 'White AUKEY 20W USB-C charger in its retail box. I may have left it in SJT 304 after class.',
     image: '/items/charger-premium.jpg',
     contact: 'student.sjt2024@vitstudent.ac.in',
     phone: '+91 98450 12345',
@@ -162,7 +163,7 @@ const INITIAL_ITEMS = [
     coordinates: { x: 44, y: 55 },
     date: '2026-10-19',
     status: 'found',
-    description: 'Casio fx-991ES Plus calculator found on the 2nd-floor desk near the mechanical lab.',
+    description: 'Found this Casio fx-991ES Plus on a second-floor desk near the mechanical lab.',
     image: '/items/calculator-premium.jpg',
     contact: 'guard.tt@vit.ac.in',
     phone: '+91 94431 88990',
@@ -177,7 +178,7 @@ const INITIAL_ITEMS = [
     coordinates: { x: 68, y: 28 },
     date: '2026-10-17',
     status: 'lost',
-    description: 'Brass room key with a blue fabric keychain tag attached reading "Q-402".',
+    description: 'Three brass keys on a blue fabric loop. I last had them near MH Q Block.',
     image: '/items/keys-premium.jpg',
     contact: 'hostel.q@vitstudent.ac.in',
     phone: '+91 97890 55441',
@@ -192,7 +193,7 @@ const INITIAL_ITEMS = [
     coordinates: { x: 29, y: 76 },
     date: '2026-10-16',
     status: 'found',
-    description: 'Silver steel strap watch with a dark blue dial, found on reading table #14.',
+    description: 'Found a silver Titan watch with a navy face on reading table 14 and left it at the library desk.',
     image: '/items/watch-premium.jpg',
     contact: 'library.desk@vit.ac.in',
     phone: '+91 91234 56789',
@@ -207,7 +208,7 @@ const INITIAL_ITEMS = [
     coordinates: { x: 35, y: 63 },
     date: '2026-10-19',
     status: 'lost',
-    description: 'Matte cobalt blue 32oz insulated bottle with various tech stickers on it.',
+    description: 'I left my blue insulated bottle near Woody’s after lunch. It has a couple of small tech stickers on it.',
     image: '/items/bottle-premium.jpg',
     contact: 'priya.m2023@vitstudent.ac.in',
     phone: '+91 95001 22334',
@@ -218,10 +219,10 @@ const INITIAL_ITEMS = [
 
 // Additional campus reports include a few duplicate names for search testing.
 const ADDITIONAL_ITEMS = [
-  { id: 8, title: 'Casio Scientific Calculator', category: 'Stationery', location: 'PRP C Block', status: 'lost', date: '2026-10-19', description: 'Black scientific calculator with a small scratch on the back cover.', image: '/items/calculator.jpg', coordinates: locationMapPoint('PRP C Block') },
-  { id: 13, title: 'Titan Analog Wristwatch', category: 'Accessories', location: 'TT (Technology Tower)', status: 'found', date: '2026-10-18', description: 'Analog watch found on a classroom desk near the stairwell.', image: '/items/watch.jpg', coordinates: locationMapPoint('TT (Technology Tower)') },
-  { id: 16, title: 'USB-C Laptop Charger', category: 'Electronics', location: 'Food Court', status: 'found', date: '2026-10-19', description: 'Compact USB-C laptop power adapter found near the seating area.', image: '/items/charger.jpg', coordinates: locationMapPoint('Food Court') },
-  { id: 17, title: 'Scientific Calculator', category: 'Stationery', location: 'MGR Main Building', status: 'lost', date: '2026-10-16', description: 'Dark scientific calculator with a protective sliding cover.', image: '/items/calculator-alt.jpg', coordinates: locationMapPoint('MGR Main Building') },
+  { id: 8, title: 'Casio Scientific Calculator', category: 'Stationery', location: 'PRP C Block', status: 'lost', date: '2026-10-19', description: 'I left my black Casio in PRP C Block. There’s a small scratch on the back cover.', image: '/items/calculator.jpg', coordinates: locationMapPoint('PRP C Block') },
+  { id: 13, title: 'Titan Analog Wristwatch', category: 'Accessories', location: 'TT (Technology Tower)', status: 'found', date: '2026-10-18', description: 'Found a blue-dial watch on a classroom desk near the stairwell in TT.', image: '/items/watch.jpg', coordinates: locationMapPoint('TT (Technology Tower)') },
+  { id: 16, title: 'USB-C Laptop Charger', category: 'Electronics', location: 'Food Court', status: 'found', date: '2026-10-19', description: 'A compact USB-C charger was left by the Food Court seating. I handed it in at the counter.', image: '/items/charger.jpg', coordinates: locationMapPoint('Food Court') },
+  { id: 17, title: 'Scientific Calculator', category: 'Stationery', location: 'MGR Main Building', status: 'lost', date: '2026-10-16', description: 'Dark scientific calculator with a sliding cover. I last used it in the MGR building.', image: '/items/calculator-alt.jpg', coordinates: locationMapPoint('MGR Main Building') },
   { id: 18, title: 'Key Ring with Room Keys', category: 'Keys', location: 'LH A Block', status: 'found', date: '2026-10-19', description: 'Small key ring with two room keys found by the common room.', image: '/items/keys.jpg', coordinates: locationMapPoint('LH A Block') },
   { id: 19, title: 'Silver Wristwatch', category: 'Accessories', location: 'SJT Ground', status: 'lost', date: '2026-10-15', description: 'Silver analog watch with a navy dial, last noticed near the ground.', image: '/items/watch-alt.jpg', coordinates: locationMapPoint('SJT Ground') },
   { id: 20, title: 'Insulated Water Bottle', category: 'Personal', location: 'Nescafe', status: 'found', date: '2026-10-18', description: 'Blue metal water bottle found near the Nescafe counter.', image: '/items/bottle.jpg', coordinates: locationMapPoint('Nescafe') },
@@ -295,6 +296,7 @@ export default function App() {
   const [enteredPin, setEnteredPin] = useState('');
   const [verifyError, setVerifyError] = useState('');
   const [successBanner, setSuccessBanner] = useState('');
+  const [databaseError, setDatabaseError] = useState('');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -322,8 +324,28 @@ export default function App() {
   }, [searchTerm]);
 
   useEffect(() => {
+    let active = true;
+    if (isSupabaseConfigured) {
+      fetchReports()
+        .then(reports => {
+          if (!active) return;
+          const resolved = readResolvedItems();
+          const databaseItems = reports.map(item => withMapFields(
+            resolved[item.id] ? { ...item, status: 'resolved', resolvedAt: resolved[item.id] } : item
+          ));
+          const databaseIds = new Set(databaseItems.map(item => item.id));
+          setItems(current => [...databaseItems, ...current.filter(item => !databaseIds.has(item.id))]);
+        })
+        .catch(error => {
+          console.error('Could not load reports from Supabase:', error);
+          if (active) setDatabaseError('Could not connect to the reports database. Existing preview reports are still available.');
+        })
+        .finally(() => { if (active) setIsInitialLoading(false); });
+      return () => { active = false; };
+    }
     const timer = window.setTimeout(() => setIsInitialLoading(false), 900);
     return () => {
+      active = false;
       window.clearTimeout(timer);
       window.clearTimeout(loadingPreviewTimerRef.current);
     };
@@ -501,24 +523,38 @@ export default function App() {
     setFocusedMapItem(item);
   }, [mapMinZoom]);
 
-  const handlePostItem = (e) => {
+  const handlePostItem = async (e) => {
     e.preventDefault();
     if (phoneError) {
       document.getElementById('report-phone')?.focus();
       return;
     }
     const coordinates = locationMapPoint(formData.location);
-    const newItem = withMapFields({
-      id: Date.now(),
-      ...formData,
-      phone: formData.phone ? `+91 ${formData.phone.replace(/\D/g, '')}` : '',
-      name: formData.title,
-      building: formData.location,
-      coordinates,
-      date: new Date().toISOString().split('T')[0],
-      image: formData.image
-    });
-    setItems([newItem, ...items]);
+    try {
+      const image = isSupabaseConfigured && formData.image
+        ? await uploadReportImage(formData.image)
+        : formData.image;
+      let newItem = withMapFields({
+        id: Date.now(),
+        ...formData,
+        phone: formData.phone ? `+91 ${formData.phone.replace(/\D/g, '')}` : '',
+        name: formData.title,
+        building: formData.location,
+        coordinates,
+        date: new Date().toISOString().split('T')[0],
+        image,
+      });
+      if (isSupabaseConfigured) {
+        const id = await createReport(newItem);
+        newItem = { ...newItem, id };
+      }
+      setItems(current => [newItem, ...current]);
+      setDatabaseError('');
+    } catch (error) {
+      console.error('Could not save the report:', error);
+      setDatabaseError('Could not save this report. Check your database setup and try again.');
+      return;
+    }
     setIsReportModalOpen(false);
     setFormData({
       title: '', category: 'Electronics', location: 'SJT (Silver Jubilee Tower)',
@@ -530,9 +566,23 @@ export default function App() {
 
   const handleImageUpload = (event) => {
     const file = event.target.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file) return;
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setDatabaseError('Choose a JPG, PNG, or WEBP item photo.');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setDatabaseError('Item photos must be 5 MB or smaller.');
+      event.target.value = '';
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = () => setFormData(current => ({ ...current, image: reader.result }));
+    reader.onload = () => {
+      setFormData(current => ({ ...current, image: reader.result }));
+      setDatabaseError('');
+    };
     reader.readAsDataURL(file);
   };
 
@@ -565,6 +615,11 @@ export default function App() {
         <div className="bg-emerald-600 text-white px-4 py-3 text-center font-medium shadow-md sticky top-0 z-50 flex items-center justify-center gap-2">
           <CheckCircle className="w-5 h-5" />
           <span>{successBanner}</span>
+        </div>
+      )}
+      {databaseError && (
+        <div role="alert" className="bg-rose-950 px-4 py-3 text-center text-sm font-medium text-rose-200">
+          {databaseError}
         </div>
       )}
 
@@ -1103,7 +1158,7 @@ export default function App() {
                 </label>
               </div>
 
-              <p className={`rounded-xl border p-3 text-xs leading-relaxed ${darkMode ? 'border-cyan-900 bg-cyan-950/50 text-cyan-200' : 'border-cyan-100 bg-cyan-50 text-cyan-800'}`}>Avoid personal details in titles, descriptions, or photos. Reports stay in this browser session.</p>
+              <p className={`rounded-xl border p-3 text-xs leading-relaxed ${darkMode ? 'border-cyan-900 bg-cyan-950/50 text-cyan-200' : 'border-cyan-100 bg-cyan-50 text-cyan-800'}`}>Avoid personal details in photos. {isSupabaseConfigured ? 'Reports and uploaded photos are saved to the campus database; contact details are visible only when you choose to share them.' : 'This preview keeps reports in this browser session. Connect the database to share reports across devices.'}</p>
 
               <section className={`space-y-3 rounded-xl border p-4 ${darkMode ? 'border-zinc-700 bg-zinc-800/60' : 'border-zinc-200 bg-zinc-50'}`}>
                 <div><h3 className="text-sm font-semibold">Contact details <span className={darkMode ? 'font-normal text-zinc-400' : 'font-normal text-zinc-600'}>(optional)</span></h3><p className={`mt-1 text-xs ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>These stay private unless you choose to share them on the report.</p></div>
@@ -1123,7 +1178,7 @@ export default function App() {
                   <div className="flex-1"><label htmlFor="report-item-image" className="cursor-pointer text-sm font-semibold text-cyan-700 hover:underline dark:text-cyan-400">{formData.image ? 'Change photo' : 'Choose a photo'}</label><p className={`mt-1 text-xs ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>JPG, PNG or WEBP</p></div>
                   {formData.image && <button type="button" onClick={() => setFormData({ ...formData, image: '' })} className="text-xs font-medium text-rose-500 hover:underline">Remove</button>}
                 </div>
-                <input id="report-item-image" type="file" accept="image/*" onChange={handleImageUpload} className="sr-only" />
+                <input id="report-item-image" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} className="sr-only" />
               </div>
 
               <div>

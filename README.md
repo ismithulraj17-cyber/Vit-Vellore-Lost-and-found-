@@ -1,16 +1,23 @@
-`# React + Vite
+# VIT Find & Connect
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Lost and found reports for the VIT Vellore campus. The app includes local preview reports and can connect to Supabase for shared, persistent reports and uploaded item photos.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```sh
+npm install
+npm run dev
+```
 
-## React Compiler
+Without Supabase environment variables, the app runs with its local preview reports. Reports created in preview mode are kept only while the page is open.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Enable Supabase
 
-## Expanding the ESLint configuration
+1. Create a Supabase project and open its SQL Editor.
+2. Run [`supabase/schema.sql`](supabase/schema.sql) to create the report API, private contact storage, and item-photo bucket.
+3. Copy `.env.example` to `.env.local`, then fill in the project URL and publishable key from Supabase **Project Connect**.
+4. Add the same `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` values to Vercel Project Settings → Environment Variables, then redeploy.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The browser uses only the publishable key. Do not put a Supabase service-role key in this app or in a `VITE_` variable. Contact details are stored separately and returned only for reports whose owner enabled contact sharing. Uploaded report photos are public so they can appear on report cards; avoid including people, IDs, or other private information in photos.
+
+Existing item photos are local JPG assets under `public/items/`; newly submitted photos are uploaded to Supabase Storage when configured.
