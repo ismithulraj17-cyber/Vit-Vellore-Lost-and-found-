@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import MapSearch from './components/MapSearch';
 import { BASE_ZOOM, CAMPUS_ASPECT_RATIO, CAMPUS_BOUNDS, FLY_MS, MAX_ZOOM } from './config/mapConfig';
 import { getMapItemFields } from './lib/mapSearch';
-import { createReport, fetchReports, isSupabaseConfigured, uploadReportImage } from './lib/reportsRepository';
+import { createReport, fetchReports, uploadReportImage } from './lib/reportsRepository';
+import { isSupabaseConfigured } from './lib/supabaseClient';
 import { 
   Search, Plus, MapPin, Calendar, Tag, ShieldCheck, 
   CheckCircle, AlertTriangle, 
