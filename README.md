@@ -1,6 +1,8 @@
 # VIT Find & Connect
 
-Lost and found reports for the VIT Vellore campus. The app includes local preview reports and can connect to Supabase for shared, persistent reports and uploaded item photos.
+A responsive lost-and-found app for VIT Vellore. Browse, search, filter, sort, map, and report campus items from desktop or mobile.
+
+**Source:** [GitHub repository](https://github.com/ismithulraj17-cyber/Vit-Vellore-Lost-and-found-)
 
 ## Run locally
 
@@ -9,15 +11,14 @@ npm install
 npm run dev
 ```
 
-Without Supabase environment variables, the app runs with its local preview reports. Reports created in preview mode are kept only while the page is open.
+## Project structure
 
-## Enable Supabase
+- `src/App.jsx` - app shell, responsive report cards, filters, campus map, and report/detail forms.
+- `src/components/MapSearch.jsx` - keyboard-friendly map search and location matching.
+- `src/config/mapConfig.js` - campus map bounds and zoom settings.
+- `src/lib/mapSearch.js` - map search helpers.
+- `src/lib/reportsRepository.js` and `src/lib/supabaseClient.js` - Supabase report and photo access.
+- `supabase/schema.sql` - database functions, private contact storage, and photo bucket setup.
+- `public/items/` - bundled item photos used by the local preview reports.
 
-1. Create a Supabase project and open its SQL Editor.
-2. Run [`supabase/schema.sql`](supabase/schema.sql) to create the report API, private contact storage, and item-photo bucket.
-3. Copy `.env.example` to `.env.local`, then fill in the project URL and publishable key from Supabase **Project Connect**.
-4. Add the same `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` values to Vercel Project Settings → Environment Variables, then redeploy.
-
-The browser uses only the publishable key. Do not put a Supabase service-role key in this app or in a `VITE_` variable. Contact details are stored separately and returned only for reports whose owner enabled contact sharing. Uploaded report photos are public so they can appear on report cards; avoid including people, IDs, or other private information in photos.
-
-Existing item photos are local JPG assets under `public/items/`; newly submitted photos are uploaded to Supabase Storage when configured.
+Without Supabase credentials, the app runs with local preview reports. To enable shared reports and photo uploads, run `supabase/schema.sql`, copy `.env.example` to `.env.local`, and add the Supabase URL and publishable key. Add the same variables in Vercel Project Settings > Environment Variables before redeploying. Never expose a service-role key in the frontend.
