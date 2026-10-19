@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import MapSearch from './components/MapSearch';
 import { BASE_ZOOM, CAMPUS_ASPECT_RATIO, CAMPUS_BOUNDS, FLY_MS, MAX_ZOOM } from './config/mapConfig';
@@ -1177,7 +1177,7 @@ export default function App() {
               <div>
                 <label htmlFor="report-item-image" className="mb-1 block text-xs font-semibold uppercase tracking-wider">{formData.status === 'lost' ? 'Photo of lost item (optional)' : 'Photo of found item (optional)'}</label>
                 <div className={`flex items-center gap-3 rounded-xl border border-dashed p-3 ${darkMode ? 'border-zinc-600 bg-zinc-800' : 'border-zinc-300 bg-zinc-50'}`}>
-                  {formData.image ? <img src={formData.image} alt="Selected item preview" className="h-16 w-16 rounded-lg object-cover" /> : <span className={`flex h-16 w-16 items-center justify-center rounded-lg ${darkMode ? 'bg-[#243a37] text-[#a4bdaa]' : 'bg-[#e8f0ee] text-[#49685c]'}`}><Plus className="h-6 w-6" /></span>}
+                  {formData.image ? <img src={formData.image} alt="Selected item preview" className="h-16 w-16 rounded-lg object-cover" /> : <button type="button" onClick={() => document.getElementById('report-item-image')?.click()} aria-label="Add item photo" title="Add item photo" className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-lg transition hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#668271] ${darkMode ? 'bg-[#243a37] text-[#a4bdaa]' : 'bg-[#e8f0ee] text-[#49685c]'}`}><Plus className="h-6 w-6" /></button>}
                   <div className="flex-1"><label htmlFor="report-item-image" className={`cursor-pointer text-sm font-semibold hover:underline ${darkMode ? 'text-[#a4bdaa]' : 'text-[#49685c]'}`}>{formData.image ? 'Change photo' : 'Choose a photo'}</label><p className={`mt-1 text-xs ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>Upload a photo for either a lost or found report. JPG, PNG or WEBP (up to 5 MB).</p></div>
                   {formData.image && <button type="button" onClick={() => setFormData({ ...formData, image: '' })} className="text-xs font-medium text-rose-500 hover:underline">Remove</button>}
                 </div>
