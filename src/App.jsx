@@ -237,6 +237,15 @@ const ADDITIONAL_ITEMS = [
   { id: 29, title: 'Black Frame Sunglasses', category: 'Accessories', location: 'SJT Ground', status: 'lost', date: '2026-10-19', description: 'Black framed sunglasses in a slim case, last seen near the ground.', image: '/items/sunglasses.jpg', coordinates: locationMapPoint('SJT Ground') },
 ];
 
+// A compact first-run board shows the main categories and both lost/found flows.
+// Real reports loaded from the database are added alongside these local examples.
+const PREVIEW_ITEMS = [
+  ...INITIAL_ITEMS,
+  ADDITIONAL_ITEMS[0],
+  ADDITIONAL_ITEMS[7],
+  ADDITIONAL_ITEMS[8],
+];
+
 const RESOLVED_ITEMS_KEY = 'vit-lost-and-found:resolved-items';
 const readResolvedItems = () => {
   try { return JSON.parse(localStorage.getItem(RESOLVED_ITEMS_KEY) || '{}'); }
@@ -255,7 +264,7 @@ const SUCCESS_MESSAGES = [
 export default function App() {
   const [items, setItems] = useState(() => {
     const resolved = readResolvedItems();
-    return [...INITIAL_ITEMS, ...ADDITIONAL_ITEMS].map(item => withMapFields(resolved[item.id] ? { ...item, status: 'resolved', resolvedAt: resolved[item.id] } : item));
+    return PREVIEW_ITEMS.map(item => withMapFields(resolved[item.id] ? { ...item, status: 'resolved', resolvedAt: resolved[item.id] } : item));
   });
   const [mapClock, setMapClock] = useState(Date.now());
   const [searchTerm, setSearchTerm] = useState('');
@@ -267,7 +276,7 @@ export default function App() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const loadingPreviewTimerRef = React.useRef(null);
   const [activeTab, setActiveTab] = useState('grid');
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
   const [mapZoom, setMapZoom] = useState(BASE_ZOOM);
   const [mapMinZoom, setMapMinZoom] = useState(BASE_ZOOM);
   const [mapCenter, setMapCenter] = useState(INITIAL_MAP_CENTER);
@@ -611,7 +620,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-zinc-950 text-zinc-200' : 'bg-zinc-50 text-zinc-800'}`}>
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-zinc-950 text-zinc-200' : 'bg-[#f4f2eb] text-[#19372e]'}`}>
       
       {successBanner && (
         <div className="bg-emerald-600 text-white px-4 py-3 text-center font-medium shadow-md sticky top-0 z-50 flex items-center justify-center gap-2">
@@ -626,15 +635,15 @@ export default function App() {
       )}
 
       {/* Header */}
-      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${darkMode ? 'bg-zinc-900/90 border-zinc-800' : 'bg-white/90 border-zinc-200'}`}>
+      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${darkMode ? 'bg-zinc-900/90 border-zinc-800' : 'bg-[#f8f7f2]/95 border-[#e4e1d7]'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
               <div className="flex items-center gap-3">
-            <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-800 text-cyan-400 shadow-lg shadow-cyan-500/20">
+            <div className={`relative flex h-11 w-11 items-center justify-center rounded-2xl shadow-lg ${darkMode ? 'bg-zinc-800 text-cyan-400 shadow-cyan-500/20' : 'bg-[#19372e] text-[#f3a45b] shadow-[#19372e]/15'}`}>
               <MapPin className="h-6 w-6" strokeWidth={2.2} />
-              <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-cyan-500 text-zinc-950"><Check className="h-2.5 w-2.5" strokeWidth={3} /></span>
+              <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-[#ef9c55] text-[#19372e]"><Check className="h-2.5 w-2.5" strokeWidth={3} /></span>
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-zinc-800 dark:text-zinc-100">
+              <h1 className={`text-xl font-bold tracking-tight ${darkMode ? 'text-zinc-100' : 'text-[#19372e]'}`}>
                 VIT Find &amp; Connect
               </h1>
               <p className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${darkMode ? 'text-zinc-400' : 'text-zinc-500'}`}>
@@ -655,7 +664,7 @@ export default function App() {
 
             <button 
               onClick={() => setIsReportModalOpen(true)}
-              className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-medium px-4 py-2.5 rounded-xl shadow-md transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+              className="flex items-center gap-2 rounded-xl bg-[#e9954e] px-4 py-2.5 font-semibold text-[#19372e] shadow-md transition-all hover:bg-[#f3a967] hover:shadow-lg"
             >
               <Plus className="w-5 h-5" />
               <span>Report Item</span>
@@ -665,21 +674,42 @@ export default function App() {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8 lg:py-10">
+
+        {/* Campus welcome panel */}
+        <section className={`relative mb-7 overflow-hidden rounded-[2rem] px-6 py-8 shadow-xl sm:px-10 sm:py-11 lg:px-14 ${darkMode ? 'bg-zinc-900' : 'bg-[#19372e]'}`}>
+          <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-28 h-80 w-80 rounded-full border border-white/10 sm:right-12 sm:top-[-9rem] sm:h-[27rem] sm:w-[27rem]" />
+          <div aria-hidden="true" className="pointer-events-none absolute -right-4 top-10 h-48 w-48 rounded-full border border-white/10 sm:right-28 sm:top-2 sm:h-64 sm:w-64" />
+          <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div className="max-w-2xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#f3b879]"><Sparkles className="h-3.5 w-3.5" /> VIT Vellore community board</div>
+              <h2 className="max-w-xl text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">Lost something?<br /><span className="text-[#f0ad70]">Let’s bring it home.</span></h2>
+              <p className="mt-4 max-w-lg text-sm leading-6 text-white/70 sm:text-base">A simple, trusted place to reconnect campus belongings with the people who miss them.</p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <button type="button" onClick={() => setIsReportModalOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-[#ef9c55] px-5 py-3 text-sm font-bold text-[#19372e] transition hover:bg-[#f6b578]"><Plus className="h-4 w-4" /> Post a report</button>
+                <button type="button" onClick={() => document.getElementById('item-search')?.focus()} className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/15"><Search className="h-4 w-4" /> Browse reports</button>
+              </div>
+            </div>
+            <div className="relative grid grid-cols-3 gap-2 sm:gap-3 lg:min-w-[330px]">
+              {[{ value: items.filter(item => item.status === 'lost').length, label: 'Lost' }, { value: items.filter(item => item.status === 'found').length, label: 'Found' }, { value: items.filter(item => item.status === 'resolved').length, label: 'Reunited' }].map(stat => <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/[0.07] px-3 py-4 text-center backdrop-blur sm:px-5 sm:py-5"><p className="text-2xl font-semibold text-white sm:text-3xl">{stat.value}</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55 sm:text-xs">{stat.label}</p></div>)}
+            </div>
+          </div>
+        </section>
         
         {/* Search & Filters */}
-        <div className={`p-5 rounded-2xl border shadow-sm mb-8 ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+        <div className={`mb-8 rounded-[1.5rem] border p-4 shadow-sm sm:p-5 ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-[#fffefa] border-[#e5e1d7]'}`}>
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             
             <div className="relative w-full md:w-80">
               <Search className={`absolute left-3.5 top-3.5 w-5 h-5 ${darkMode ? 'text-zinc-400' : 'text-zinc-500'}`} />
               <input 
                 type="text"
+                id="item-search"
                 aria-label="Search lost and found items"
                 placeholder="Search items, buildings..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full pl-11 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-800'}`}
+                className={`w-full rounded-xl border py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-cyan-500' : 'bg-[#f7f6f0] border-[#dedbd1] text-[#19372e] focus:ring-[#6d8a70]'}`}
               />
             </div>
 
@@ -689,7 +719,7 @@ export default function App() {
                   key={status}
                   onClick={() => setStatusFilter(status)}
                   aria-pressed={statusFilter === status}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${statusFilter === status ? 'bg-cyan-500 text-zinc-950 shadow' : darkMode ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-zinc-900'}`}
+                  className={`rounded-lg px-4 py-1.5 text-xs font-semibold capitalize transition-all ${statusFilter === status ? (darkMode ? 'bg-cyan-500 text-zinc-950 shadow' : 'bg-[#24483a] text-white shadow') : darkMode ? 'text-zinc-400 hover:text-white' : 'text-[#68776c] hover:text-[#19372e]'}`}
                 >
                   {status}
                 </button>
@@ -744,7 +774,7 @@ export default function App() {
               <div className={`flex p-1 rounded-xl border ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-100 border-zinc-200'}`}>
                 <button
                   onClick={() => setActiveTab('grid')}
-                  className={`p-2 rounded-lg text-xs font-medium transition-all ${activeTab === 'grid' ? 'bg-cyan-500 text-zinc-950 shadow' : darkMode ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-600 hover:text-zinc-900'}`}
+                  className={`rounded-lg p-2 text-xs font-medium transition-all ${activeTab === 'grid' ? (darkMode ? 'bg-cyan-500 text-zinc-950 shadow' : 'bg-[#24483a] text-white shadow') : darkMode ? 'text-zinc-400 hover:text-zinc-200' : 'text-[#68776c] hover:text-[#19372e]'}`}
                   title="Grid View"
                   aria-label="Show item cards"
                   aria-pressed={activeTab === 'grid'}
@@ -753,7 +783,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setActiveTab('map')}
-                  className={`p-2 rounded-lg text-xs font-medium transition-all ${activeTab === 'map' ? 'bg-cyan-500 text-zinc-950 shadow' : darkMode ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-600 hover:text-zinc-900'}`}
+                  className={`rounded-lg p-2 text-xs font-medium transition-all ${activeTab === 'map' ? (darkMode ? 'bg-cyan-500 text-zinc-950 shadow' : 'bg-[#24483a] text-white shadow') : darkMode ? 'text-zinc-400 hover:text-zinc-200' : 'text-[#68776c] hover:text-[#19372e]'}`}
                   title="Campus map view"
                   aria-label="Show campus map"
                   aria-pressed={activeTab === 'map'}
@@ -765,6 +795,14 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {activeTab === 'grid' && <div className="mb-4 flex flex-wrap items-end justify-between gap-2 px-1">
+          <div>
+            <p className={`text-[11px] font-bold uppercase tracking-[0.18em] ${darkMode ? 'text-cyan-400' : 'text-[#7c8b73]'}`}>The campus board</p>
+            <h2 className={`mt-1 text-2xl font-semibold tracking-tight ${darkMode ? 'text-white' : 'text-[#19372e]'}`}>Recent reports</h2>
+          </div>
+          <span className={`text-sm ${darkMode ? 'text-zinc-400' : 'text-[#768178]'}`}>{filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'} to explore</span>
+        </div>}
 
         {/* Grid View */}
         {activeTab === 'grid' && (
@@ -792,10 +830,10 @@ export default function App() {
                     aria-label={`View details for ${item.title}, ${item.status} item at ${item.location}`}
                     onClick={() => { setSelectedItem(item); setVerifyStep(false); setEnteredPin(''); setVerifyError(''); }}
                     onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedItem(item); setVerifyStep(false); setEnteredPin(''); setVerifyError(''); } }}
-                    className={`group rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-[0_0_15px_rgba(6,182,212,0.12)] cursor-pointer flex flex-col justify-between ${darkMode ? 'bg-zinc-900 border-zinc-800 hover:border-cyan-500/50' : 'bg-white border-zinc-200 hover:border-cyan-300'}`}
+                    className={`group flex cursor-pointer flex-col justify-between overflow-hidden rounded-[1.5rem] border transition-all duration-300 hover:-translate-y-1 ${darkMode ? 'bg-zinc-900 border-zinc-800 hover:border-cyan-500/50 hover:shadow-[0_18px_45px_rgba(0,0,0,0.3)]' : 'bg-[#fffefa] border-[#e3dfd4] shadow-[0_8px_25px_rgba(34,52,41,0.05)] hover:border-[#b2c4ad] hover:shadow-[0_18px_40px_rgba(34,52,41,0.12)]'}`}
                   >
                     <div>
-                      {item.image && <div className="relative h-48 overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+                      {item.image && <div className="relative h-56 overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                         <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         <div className="absolute top-3 left-3">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-zinc-950 shadow ${
@@ -814,7 +852,7 @@ export default function App() {
                           <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-950 ${item.status === 'lost' ? 'bg-rose-500' : item.status === 'found' ? 'bg-emerald-500' : 'bg-zinc-400'}`}>{item.status}</span>
                           <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${darkMode ? 'bg-zinc-800 text-zinc-200' : 'bg-zinc-100 text-zinc-700'}`}>{item.category}</span>
                         </div>}
-                        <h2 className="font-bold text-base mb-1 group-hover:text-cyan-500 transition-colors line-clamp-1">
+                        <h2 className={`mb-1 line-clamp-1 text-base font-bold transition-colors ${darkMode ? 'group-hover:text-cyan-400' : 'group-hover:text-[#53735d]'}`}>
                           {item.title}
                         </h2>
                         <p className={`text-xs line-clamp-2 mb-4 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
@@ -823,7 +861,7 @@ export default function App() {
 
                         <div className={`space-y-2 text-xs pt-3 border-t ${darkMode ? 'border-zinc-800 text-zinc-400' : 'border-zinc-100 text-zinc-600'}`}>
                           <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-cyan-500 shrink-0" />
+                            <MapPin className={`h-4 w-4 shrink-0 ${darkMode ? 'text-cyan-500' : 'text-[#71866d]'}`} />
                             <span className="truncate font-medium">{item.location}</span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -836,7 +874,7 @@ export default function App() {
 
                     <div className={`px-5 py-3.5 border-t flex items-center justify-between text-xs font-medium ${darkMode ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-100 bg-zinc-50'}`}>
                       <span className={darkMode ? 'text-zinc-400' : 'text-zinc-600'}>Reporter identity kept private</span>
-                      <span className="text-cyan-700 dark:text-cyan-400 flex items-center gap-1 group-hover:underline">
+                      <span className={`flex items-center gap-1 group-hover:underline ${darkMode ? 'text-cyan-400' : 'text-[#b56c36]'}`}>
                         View Details & Claim <ArrowRight className="w-3.5 h-3.5" />
                       </span>
                     </div>
