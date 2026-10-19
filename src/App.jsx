@@ -540,6 +540,8 @@ export default function App() {
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setDarkMode(!darkMode)}
+              aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-pressed={darkMode}
               className={`p-2.5 rounded-xl border transition-all ${darkMode ? 'bg-zinc-800 border-zinc-700 text-amber-400' : 'bg-white border-zinc-200 text-zinc-700 shadow-sm'}`}
             >
               {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -564,9 +566,10 @@ export default function App() {
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             
             <div className="relative w-full md:w-80">
-              <Search className={`absolute left-3.5 top-3.5 w-5 h-5 ${darkMode ? 'text-zinc-500' : 'text-zinc-400'}`} />
+              <Search className={`absolute left-3.5 top-3.5 w-5 h-5 ${darkMode ? 'text-zinc-400' : 'text-zinc-500'}`} />
               <input 
                 type="text"
+                aria-label="Search lost and found items"
                 placeholder="Search items, buildings..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -574,11 +577,12 @@ export default function App() {
               />
             </div>
 
-            <div className={`flex p-1 rounded-xl border ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-100 border-zinc-200'}`}>
+            <div role="group" aria-label="Filter reports by status" className={`flex p-1 rounded-xl border ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-100 border-zinc-200'}`}>
               {['all', 'lost', 'found', 'resolved'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
+                  aria-pressed={statusFilter === status}
                   className={`px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${statusFilter === status ? 'bg-cyan-500 text-zinc-950 shadow' : darkMode ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-zinc-900'}`}
                 >
                   {status}
@@ -588,6 +592,7 @@ export default function App() {
 
             <div className="flex items-center gap-3 w-full md:w-auto justify-end">
               <select
+                aria-label="Filter by category"
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className={`py-2 px-3 rounded-xl border text-xs font-medium focus:outline-none ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-700'}`}
@@ -601,6 +606,7 @@ export default function App() {
               </select>
 
               <select
+                aria-label="Filter by campus location"
                 value={locationFilter}
                 onChange={(e) => handleLocationFilterChange(e.target.value)}
                 className={`py-2 px-3 rounded-xl border text-xs font-medium focus:outline-none max-w-[160px] truncate ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-700'}`}
@@ -612,15 +618,19 @@ export default function App() {
               <div className={`flex p-1 rounded-xl border ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-100 border-zinc-200'}`}>
                 <button
                   onClick={() => setActiveTab('grid')}
-                  className={`p-2 rounded-lg text-xs font-medium transition-all ${activeTab === 'grid' ? 'bg-cyan-500 text-zinc-950 shadow' : 'text-zinc-500'}`}
+                  className={`p-2 rounded-lg text-xs font-medium transition-all ${activeTab === 'grid' ? 'bg-cyan-500 text-zinc-950 shadow' : darkMode ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-600 hover:text-zinc-900'}`}
                   title="Grid View"
+                  aria-label="Show item cards"
+                  aria-pressed={activeTab === 'grid'}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                 </button>
                 <button
                   onClick={() => setActiveTab('map')}
-                  className={`p-2 rounded-lg text-xs font-medium transition-all ${activeTab === 'map' ? 'bg-cyan-500 text-zinc-950 shadow' : 'text-zinc-500'}`}
-                  title="Google Maps UI View"
+                  className={`p-2 rounded-lg text-xs font-medium transition-all ${activeTab === 'map' ? 'bg-cyan-500 text-zinc-950 shadow' : darkMode ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-600 hover:text-zinc-900'}`}
+                  title="Campus map view"
+                  aria-label="Show campus map"
+                  aria-pressed={activeTab === 'map'}
                 >
                   <MapPin className="w-4 h-4" />
                 </button>
@@ -636,22 +646,26 @@ export default function App() {
             {filteredItems.length === 0 ? (
               <div className={`text-center py-20 rounded-3xl border ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
                 <AlertCircle className="w-12 h-12 mx-auto mb-3 text-zinc-400" />
-                <h3 className="text-lg font-semibold">No items found</h3>
-                <p className="text-sm text-zinc-500 mt-1">Try adjusting your filters or search keywords.</p>
+              <h2 className="text-lg font-semibold">No items found</h2>
+                <p className={`text-sm mt-1 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>Try adjusting your filters or search keywords.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredItems.map((item) => (
                   <div 
                     key={item.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`View details for ${item.title}, ${item.status} item at ${item.location}`}
                     onClick={() => { setSelectedItem(item); setVerifyStep(false); setEnteredPin(''); setVerifyError(''); }}
+                    onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedItem(item); setVerifyStep(false); setEnteredPin(''); setVerifyError(''); } }}
                     className={`group rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-[0_0_15px_rgba(6,182,212,0.12)] cursor-pointer flex flex-col justify-between ${darkMode ? 'bg-zinc-900 border-zinc-800 hover:border-cyan-500/50' : 'bg-white border-zinc-200 hover:border-cyan-300'}`}
                   >
                     <div>
                       {item.image && <div className="relative h-48 overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                         <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         <div className="absolute top-3 left-3">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-white shadow ${
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-zinc-950 shadow ${
                             item.status === 'lost' ? 'bg-rose-500' : item.status === 'found' ? 'bg-emerald-500' : 'bg-zinc-600'
                           }`}>
                             {item.status}
@@ -663,14 +677,14 @@ export default function App() {
                       </div>}
 
                       <div className="p-5">
-                        <h3 className="font-bold text-base mb-1 group-hover:text-cyan-500 transition-colors line-clamp-1">
+                        <h2 className="font-bold text-base mb-1 group-hover:text-cyan-500 transition-colors line-clamp-1">
                           {item.title}
-                        </h3>
+                        </h2>
                         <p className={`text-xs line-clamp-2 mb-4 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
                           {item.description}
                         </p>
 
-                        <div className={`space-y-2 text-xs pt-3 border-t ${darkMode ? 'border-zinc-800 text-zinc-400' : 'border-zinc-100 text-zinc-500'}`}>
+                        <div className={`space-y-2 text-xs pt-3 border-t ${darkMode ? 'border-zinc-800 text-zinc-400' : 'border-zinc-100 text-zinc-600'}`}>
                           <div className="flex items-center gap-2">
                             <MapPin className="w-4 h-4 text-cyan-500 shrink-0" />
                             <span className="truncate font-medium">{item.location}</span>
@@ -684,8 +698,8 @@ export default function App() {
                     </div>
 
                     <div className={`px-5 py-3.5 border-t flex items-center justify-between text-xs font-medium ${darkMode ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-100 bg-zinc-50'}`}>
-                      <span className="text-zinc-500">Reporter identity kept private</span>
-                      <span className="text-cyan-600 dark:text-cyan-400 flex items-center gap-1 group-hover:underline">
+                      <span className={darkMode ? 'text-zinc-400' : 'text-zinc-600'}>Reporter identity kept private</span>
+                      <span className="text-cyan-700 dark:text-cyan-400 flex items-center gap-1 group-hover:underline">
                         View Details & Claim <ArrowRight className="w-3.5 h-3.5" />
                       </span>
                     </div>
@@ -701,8 +715,8 @@ export default function App() {
           <div className={`overflow-hidden rounded-3xl border shadow-xl ${darkMode ? 'border-zinc-800 bg-zinc-900' : 'border-zinc-200 bg-white'}`}>
             <div className="flex items-center justify-between border-b px-5 py-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-50 text-cyan-600"><Navigation className="h-5 w-5" /></span>
-                VIT Vellore &middot; Lost &amp; Found
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-50 text-cyan-700"><Navigation className="h-5 w-5" /></span>
+                <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">VIT Vellore &middot; Lost &amp; Found</h2>
               </div>
               <span className="hidden rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-600 sm:inline-flex">{mapItems.length} matching reports</span>
             </div>
@@ -766,10 +780,10 @@ export default function App() {
                 <MapSearch items={mapItems} value={searchTerm} onChange={value => { setSearchTerm(value); setFocusedSearchId(null); }} onSelectItem={focusSearchResult} />
 
                 <div className={`absolute right-4 top-4 z-20 flex flex-col overflow-hidden rounded-xl shadow-lg ring-1 ${darkMode ? 'bg-zinc-900 ring-zinc-700' : 'bg-white ring-black/5'}`} data-map-control>
-                  <button type="button" aria-label="Zoom in" title="Zoom in" disabled={mapZoom >= MAX_ZOOM} onPointerDown={event => event.stopPropagation()} onClick={() => handleMapZoom(1)} className="p-3 text-zinc-700 transition hover:bg-zinc-50 disabled:text-zinc-300"><ZoomIn className="h-5 w-5" /></button>
-                  <span className="border-y border-zinc-100 py-1 text-center text-[10px] font-medium text-zinc-500">z{mapZoom}</span>
-                  <button type="button" aria-label="Zoom out" title="Zoom out" disabled={mapZoom <= mapMinZoom} onPointerDown={event => event.stopPropagation()} onClick={() => handleMapZoom(-1)} className="p-3 text-zinc-700 transition hover:bg-zinc-50 disabled:text-zinc-300"><ZoomOut className="h-5 w-5" /></button>
-                   <button type="button" aria-label="Show full campus" title="Show full campus" onPointerDown={event => event.stopPropagation()} onClick={() => { setMapZoom(mapMinZoom); setMapCenter(INITIAL_MAP_CENTER); setSearchTerm(''); setFocusedSearchId(null); setFocusedMapItem(null); }} className="border-t border-zinc-100 p-3 text-zinc-700 transition hover:bg-zinc-50"><Compass className="h-5 w-5" /></button>
+                  <button type="button" aria-label="Zoom in" title="Zoom in" disabled={mapZoom >= MAX_ZOOM} onPointerDown={event => event.stopPropagation()} onClick={() => handleMapZoom(1)} className={`p-3 transition ${darkMode ? 'text-zinc-200 hover:bg-zinc-800 disabled:text-zinc-600' : 'text-zinc-700 hover:bg-zinc-50 disabled:text-zinc-300'}`}><ZoomIn className="h-5 w-5" /></button>
+                  <span className={`border-y py-1 text-center text-[10px] font-medium ${darkMode ? 'border-zinc-700 text-zinc-400' : 'border-zinc-100 text-zinc-600'}`}>z{mapZoom}</span>
+                  <button type="button" aria-label="Zoom out" title="Zoom out" disabled={mapZoom <= mapMinZoom} onPointerDown={event => event.stopPropagation()} onClick={() => handleMapZoom(-1)} className={`p-3 transition ${darkMode ? 'text-zinc-200 hover:bg-zinc-800 disabled:text-zinc-600' : 'text-zinc-700 hover:bg-zinc-50 disabled:text-zinc-300'}`}><ZoomOut className="h-5 w-5" /></button>
+                   <button type="button" aria-label="Show full campus" title="Show full campus" onPointerDown={event => event.stopPropagation()} onClick={() => { setMapZoom(mapMinZoom); setMapCenter(INITIAL_MAP_CENTER); setSearchTerm(''); setFocusedSearchId(null); setFocusedMapItem(null); }} className={`border-t p-3 transition ${darkMode ? 'border-zinc-700 text-zinc-200 hover:bg-zinc-800' : 'border-zinc-100 text-zinc-700 hover:bg-zinc-50'}`}><Compass className="h-5 w-5" /></button>
                 </div>
 
                 <div className="absolute inset-0" style={{ clipPath: campusClip }}>
@@ -783,12 +797,12 @@ export default function App() {
                       {item.status === 'lost' ? '!' : <Check className="h-4 w-4" />}
                     </button>
                     {focusedMapItem?.id === item.id && <div data-map-control className={`absolute bottom-full left-1/2 mb-3 w-64 -translate-x-1/2 rounded-xl p-4 text-left shadow-xl ring-1 ${darkMode ? 'bg-zinc-900 text-zinc-100 ring-zinc-700' : 'bg-white text-zinc-800 ring-black/10'}`}>
-                      <button type="button" aria-label="Close map popup" onClick={() => setFocusedMapItem(null)} className="absolute right-2 top-2 rounded p-1 text-zinc-400 hover:bg-zinc-100"><X className="h-4 w-4" /></button>
+                      <button type="button" aria-label="Close map popup" onClick={() => setFocusedMapItem(null)} className={`absolute right-2 top-2 rounded p-1 ${darkMode ? 'text-zinc-300 hover:bg-zinc-800' : 'text-zinc-600 hover:bg-zinc-100'}`}><X className="h-4 w-4" /></button>
                       <p className="pr-6 text-sm font-bold">{fields.name}</p>
-                      <p className="mt-2 text-xs text-zinc-600">{fields.building}</p>
-                      <p className="mt-1 text-xs text-zinc-600">Floor: {fields.floor}</p>
-                      {fields.landmark && <p className="mt-1 text-xs text-zinc-600">Near {fields.landmark}</p>}
-                      <button type="button" onClick={() => { setSelectedItem(item); setVerifyStep(false); setEnteredPin(''); setVerifyError(''); }} className="mt-3 text-xs font-semibold text-cyan-600 hover:underline">View report</button>
+                      <p className={`mt-2 text-xs ${darkMode ? 'text-zinc-300' : 'text-zinc-600'}`}>{fields.building}</p>
+                      <p className={`mt-1 text-xs ${darkMode ? 'text-zinc-300' : 'text-zinc-600'}`}>Floor: {fields.floor}</p>
+                      {fields.landmark && <p className={`mt-1 text-xs ${darkMode ? 'text-zinc-300' : 'text-zinc-600'}`}>Near {fields.landmark}</p>}
+                      <button type="button" onClick={() => { setSelectedItem(item); setVerifyStep(false); setEnteredPin(''); setVerifyError(''); }} className="mt-3 text-xs font-semibold text-cyan-700 hover:underline dark:text-cyan-400">View report</button>
                     </div>}
                   </div>;
                 })}
@@ -802,7 +816,7 @@ export default function App() {
                 <div className={`absolute bottom-4 left-4 z-20 flex items-center gap-4 rounded-xl px-4 py-3 text-xs font-medium shadow-lg ${darkMode ? 'bg-zinc-900/95 text-zinc-200' : 'bg-white/95 text-zinc-700'}`} data-map-control>
                   <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-rose-600" />Lost</span>
                   <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-emerald-600" />Found</span>
-                  <span className="text-zinc-500">Drag the map to explore. Zoom in to pan; use the controls to zoom.</span>
+                  <span className={darkMode ? 'text-zinc-400' : 'text-zinc-600'}>Drag the map to explore. Zoom in to pan; use the controls to zoom.</span>
                 </div>
                 <div className={`absolute bottom-2 right-2 z-10 rounded px-2 py-1 text-[10px] ${darkMode ? 'bg-zinc-900/90 text-zinc-300' : 'bg-white/90 text-zinc-600'}`}>&copy; OpenStreetMap contributors</div>
               </div>;
@@ -813,27 +827,29 @@ export default function App() {
       {/* Details & Verification Modal */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className={`w-full max-w-lg rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[90vh] ${darkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-100 text-zinc-800'}`}>
+          <div role="dialog" aria-modal="true" aria-labelledby="selected-item-title" className={`w-full max-w-lg rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[90vh] ${darkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-100 text-zinc-800'}`}>
             
             {selectedItem.image && <div className="relative h-56 bg-zinc-100 dark:bg-zinc-800 shrink-0">
               <img src={selectedItem.image} alt={selectedItem.title} className="w-full h-full object-cover" />
               <button 
                 onClick={() => { setSelectedItem(null); setVerifyStep(false); }}
+                aria-label="Close item details"
                 className="absolute top-4 right-4 p-2 rounded-full bg-black/60 text-white hover:bg-black/80"
               >
                 <X className="w-5 h-5" />
               </button>
               <div className="absolute bottom-4 left-4">
-                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-white ${selectedItem.status === 'lost' ? 'bg-rose-500' : 'bg-emerald-500'}`}>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-zinc-950 ${selectedItem.status === 'lost' ? 'bg-rose-500' : 'bg-emerald-500'}`}>
                   {selectedItem.status} item
                 </span>
               </div>
             </div>}
+            {!selectedItem.image && <button type="button" onClick={() => { setSelectedItem(null); setVerifyStep(false); }} aria-label="Close item details" className="absolute right-5 top-5 rounded-full bg-zinc-800 p-2 text-white hover:bg-zinc-700"><X className="h-5 w-5" /></button>}
 
             <div className="p-6 overflow-y-auto space-y-4">
               <div>
                 <span className="text-xs font-semibold text-cyan-500 uppercase tracking-wide">{selectedItem.category}</span>
-                <h2 className="text-xl font-bold mt-0.5">{selectedItem.title}</h2>
+                <h2 id="selected-item-title" className="text-xl font-bold mt-0.5">{selectedItem.title}</h2>
                 <p className={`text-sm mt-2 leading-relaxed ${darkMode ? 'text-zinc-300' : 'text-zinc-600'}`}>
                   {selectedItem.description}
                 </p>
@@ -859,13 +875,13 @@ export default function App() {
               {!verifyStep ? (
                 <div className="space-y-3 pt-2">
                   <div className={`p-4 rounded-2xl border space-y-2 ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-cyan-50/60 border-cyan-100'}`}>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-500 flex items-center gap-1.5">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-500 flex items-center gap-1.5">
                       <ShieldCheck className="w-4 h-4" /> {selectedItem.shareContact ? 'Contact details' : 'Private handover'}
-                    </h4>
+                    </h3>
                     {selectedItem.shareContact && (selectedItem.owner || selectedItem.phone || selectedItem.contact) ? <div className="pt-1 space-y-1 text-sm">
                       {selectedItem.owner && <p>{selectedItem.owner}</p>}
-                      {selectedItem.phone && <p><a className="text-cyan-600 hover:underline" href={`tel:${selectedItem.phone}`}>{selectedItem.phone}</a></p>}
-                      {selectedItem.contact && <p><a className="text-cyan-600 hover:underline" href={`mailto:${selectedItem.contact}`}>{selectedItem.contact}</a></p>}
+                      {selectedItem.phone && <p><a className="text-cyan-700 hover:underline dark:text-cyan-400" href={`tel:${selectedItem.phone}`}>{selectedItem.phone}</a></p>}
+                      {selectedItem.contact && <p><a className="text-cyan-700 hover:underline dark:text-cyan-400" href={`mailto:${selectedItem.contact}`}>{selectedItem.contact}</a></p>}
                     </div> : <p className="pt-1 text-sm leading-relaxed">The reporter chose not to share contact details. Arrange an in-person handover at the campus security or lost-and-found desk.</p>}
                   </div>
 
@@ -882,9 +898,9 @@ export default function App() {
               ) : (
                 <div className={`p-5 rounded-2xl border space-y-4 ${darkMode ? 'bg-zinc-800 border-cyan-900' : 'bg-amber-50 border-amber-200'}`}>
                   <div>
-                    <h4 className="font-bold text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                    <h3 className="font-bold text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 shrink-0" /> Security Verification PIN Required
-                    </h4>
+                    </h3>
                     <p className={`text-xs mt-1 ${darkMode ? 'text-zinc-300' : 'text-zinc-600'}`}>
                       Enter the 4-digit verification PIN. Use <strong className="text-cyan-500">4821</strong> or <strong className="text-cyan-500">1234</strong>.
                     </p>
@@ -928,13 +944,13 @@ export default function App() {
       {/* Report Modal */}
       {isReportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className={`w-full max-w-xl rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[90vh] ${darkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-100 text-zinc-800'}`}>
+          <div role="dialog" aria-modal="true" aria-labelledby="report-modal-title" className={`w-full max-w-xl rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[90vh] ${darkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-100 text-zinc-800'}`}>
             
             <div className="p-5 border-b flex items-center justify-between">
-              <h2 className="font-bold text-lg flex items-center gap-2">
+              <h2 id="report-modal-title" className="font-bold text-lg flex items-center gap-2">
                 <Plus className="w-5 h-5 text-cyan-500" /> Report Lost or Found Item
               </h2>
-              <button onClick={() => setIsReportModalOpen(false)} className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800">
+              <button onClick={() => setIsReportModalOpen(false)} aria-label="Close report form" className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -942,8 +958,9 @@ export default function App() {
             <form onSubmit={handlePostItem} className="p-6 overflow-y-auto space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-1">Status Type</label>
+                  <label htmlFor="report-status" className="block text-xs font-semibold uppercase tracking-wider mb-1">Status Type</label>
                   <select 
+                    id="report-status"
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     className={`w-full p-3 rounded-xl border text-sm ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200'}`}
@@ -953,8 +970,9 @@ export default function App() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-1">Category</label>
+                  <label htmlFor="report-category" className="block text-xs font-semibold uppercase tracking-wider mb-1">Category</label>
                   <select 
+                    id="report-category"
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className={`w-full p-3 rounded-xl border text-sm ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200'}`}
@@ -969,8 +987,9 @@ export default function App() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-1">Item Title</label>
+                <label htmlFor="report-title" className="block text-xs font-semibold uppercase tracking-wider mb-1">Item Title</label>
                 <input 
+                  id="report-title"
                   type="text"
                   required
                   placeholder="e.g. Casio Scientific Calculator"
@@ -981,8 +1000,9 @@ export default function App() {
               </div>
 
               <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-1">VIT Location</label>
+                  <label htmlFor="report-location" className="block text-xs font-semibold uppercase tracking-wider mb-1">VIT Location</label>
                   <select 
+                    id="report-location"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     className={`w-full p-3 rounded-xl border text-sm ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200'}`}
@@ -1003,7 +1023,7 @@ export default function App() {
               <p className={`rounded-xl border p-3 text-xs leading-relaxed ${darkMode ? 'border-cyan-900 bg-cyan-950/50 text-cyan-200' : 'border-cyan-100 bg-cyan-50 text-cyan-800'}`}>Avoid personal details in titles, descriptions, or photos. Reports stay in this browser session.</p>
 
               <section className={`space-y-3 rounded-xl border p-4 ${darkMode ? 'border-zinc-700 bg-zinc-800/60' : 'border-zinc-200 bg-zinc-50'}`}>
-                <div><h3 className="text-sm font-semibold">Contact details <span className="font-normal text-zinc-500">(optional)</span></h3><p className="mt-1 text-xs text-zinc-500">These stay private unless you choose to share them on the report.</p></div>
+                <div><h3 className="text-sm font-semibold">Contact details <span className={darkMode ? 'font-normal text-zinc-400' : 'font-normal text-zinc-600'}>(optional)</span></h3><p className={`mt-1 text-xs ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>These stay private unless you choose to share them on the report.</p></div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <label className="text-xs font-semibold">Name<input autoComplete="name" value={formData.owner} onChange={event => setFormData({ ...formData, owner: event.target.value })} placeholder="Your name" className={`mt-1 w-full rounded-xl border p-3 text-sm font-normal ${darkMode ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-zinc-200'}`} /></label>
                   <label className="text-xs font-semibold">Phone<input type="tel" autoComplete="tel" value={formData.phone} onChange={event => setFormData({ ...formData, phone: event.target.value })} placeholder="Phone number" className={`mt-1 w-full rounded-xl border p-3 text-sm font-normal ${darkMode ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-zinc-200'}`} /></label>
@@ -1015,16 +1035,17 @@ export default function App() {
               <div>
                 <label htmlFor="report-item-image" className="mb-1 block text-xs font-semibold uppercase tracking-wider">Item photo (optional)</label>
                 <div className={`flex items-center gap-3 rounded-xl border border-dashed p-3 ${darkMode ? 'border-zinc-600 bg-zinc-800' : 'border-zinc-300 bg-zinc-50'}`}>
-                  {formData.image ? <img src={formData.image} alt="Selected item preview" className="h-16 w-16 rounded-lg object-cover" /> : <span className="flex h-16 w-16 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600"><Plus className="h-6 w-6" /></span>}
-                  <div className="flex-1"><label htmlFor="report-item-image" className="cursor-pointer text-sm font-semibold text-cyan-600 hover:underline">{formData.image ? 'Change photo' : 'Choose a photo'}</label><p className="mt-1 text-xs text-zinc-500">JPG, PNG or WEBP</p></div>
+                  {formData.image ? <img src={formData.image} alt="Selected item preview" className="h-16 w-16 rounded-lg object-cover" /> : <span className="flex h-16 w-16 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700"><Plus className="h-6 w-6" /></span>}
+                  <div className="flex-1"><label htmlFor="report-item-image" className="cursor-pointer text-sm font-semibold text-cyan-700 hover:underline dark:text-cyan-400">{formData.image ? 'Change photo' : 'Choose a photo'}</label><p className={`mt-1 text-xs ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>JPG, PNG or WEBP</p></div>
                   {formData.image && <button type="button" onClick={() => setFormData({ ...formData, image: '' })} className="text-xs font-medium text-rose-500 hover:underline">Remove</button>}
                 </div>
                 <input id="report-item-image" type="file" accept="image/*" onChange={handleImageUpload} className="sr-only" />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-1">Detailed Description</label>
+                <label htmlFor="report-description" className="block text-xs font-semibold uppercase tracking-wider mb-1">Detailed Description</label>
                   <textarea 
+                  id="report-description"
                   rows="3"
                   required
                   placeholder="Describe color and distinguishing features. Avoid personal details or exact private locations."
