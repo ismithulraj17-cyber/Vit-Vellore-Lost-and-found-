@@ -252,6 +252,7 @@ export default function App() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('newest');
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const loadingPreviewTimerRef = React.useRef(null);
   const [activeTab, setActiveTab] = useState('grid');
   const [darkMode, setDarkMode] = useState(true);
   const [mapZoom, setMapZoom] = useState(BASE_ZOOM);
@@ -311,8 +312,11 @@ export default function App() {
   }, [searchTerm]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setIsInitialLoading(false), 350);
-    return () => window.clearTimeout(timer);
+    const timer = window.setTimeout(() => setIsInitialLoading(false), 900);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(loadingPreviewTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -426,6 +430,12 @@ export default function App() {
     setMapZoom(nextZoom);
     const bounds = mapViewportRef.current?.getBoundingClientRect();
     setMapCenter(center => clampMapCenter(center, nextZoom, bounds?.width ?? 600, bounds?.height ?? 600));
+  };
+
+  const previewLoadingState = () => {
+    window.clearTimeout(loadingPreviewTimerRef.current);
+    setIsInitialLoading(true);
+    loadingPreviewTimerRef.current = window.setTimeout(() => setIsInitialLoading(false), 1500);
   };
 
   const filteredItems = items.filter(item => {
@@ -654,6 +664,15 @@ export default function App() {
                 <option value="oldest">Oldest first</option>
                 <option value="nearest">Nearest / most relevant</option>
               </select>
+
+              <button
+                type="button"
+                onClick={previewLoadingState}
+                disabled={isInitialLoading}
+                className={`rounded-xl border px-3 py-2 text-xs font-medium transition disabled:cursor-wait ${darkMode ? 'border-zinc-700 text-zinc-300 hover:border-cyan-500/50 hover:text-cyan-300 disabled:text-zinc-500' : 'border-zinc-200 text-zinc-700 hover:border-cyan-500 hover:text-cyan-700 disabled:text-zinc-400'}`}
+              >
+                {isInitialLoading ? 'Loading…' : 'Preview loading state'}
+              </button>
 
               <div className={`flex p-1 rounded-xl border ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-100 border-zinc-200'}`}>
                 <button
