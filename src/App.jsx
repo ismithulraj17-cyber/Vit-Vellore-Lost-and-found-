@@ -796,12 +796,12 @@ export default function App() {
                           </span>
                         </div>
                         <div className="absolute top-3 right-3 flex flex-col items-end gap-2">
-                          <span className="rounded-xl bg-black/65 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">{item.category}</span>
+                          <span className={`rounded-xl border px-3 py-1.5 text-xs font-semibold shadow-sm ${CATEGORY_BADGE_CLASSES[item.category] || 'border-zinc-200 bg-zinc-100 text-zinc-700'}`}>{item.category}</span>
                         </div>
                       </div> : <div className="flex aspect-[16/9] flex-col justify-between bg-[#f4f2eb] p-4">
                         <div className="flex items-center justify-between gap-2">
                           <span className={`rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide ${item.status === 'lost' ? 'bg-[#ff2758] text-white' : item.status === 'found' ? 'bg-[#00bd88] text-[#073b31]' : 'bg-zinc-300 text-zinc-700'}`}>{item.status}</span>
-                          <span className="rounded-xl bg-[#343434] px-3 py-1.5 text-xs font-semibold text-white">{item.category}</span>
+                          <span className={`rounded-xl border px-3 py-1.5 text-xs font-semibold ${CATEGORY_BADGE_CLASSES[item.category] || 'border-zinc-200 bg-zinc-100 text-zinc-700'}`}>{item.category}</span>
                         </div>
                         <div className="border-t border-[#e3dfd4] pt-3">
                           <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#768178]">VIT Vellore · Campus report</span>
