@@ -88,6 +88,16 @@ const withMapFields = (item) => {
     landmark: item.landmark?.trim() || '',
   };
 };
+const markerSpreadOffset = (index, count) => {
+  if (count < 2) return { x: 0, y: 0 };
+  const ring = Math.floor(index / 8);
+  const ringCount = Math.min(8, count - ring * 8);
+  const ringIndex = index % 8;
+  const ringRadius = ringCount < 2 ? 0 : 20 / Math.sin(Math.PI / ringCount);
+  const radius = Math.max(27, ringRadius) + ring * 40;
+  const angle = -Math.PI / 2 + (2 * Math.PI * ringIndex) / ringCount + ring * 0.35;
+  return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+};
 const locationMapPoint = (location) => {
   const namedPoints = {
     'SJT (Silver Jubilee Tower)': [70, 50], 'TT (Technology Tower)': [44, 55],
@@ -859,11 +869,14 @@ export default function App() {
                 <div className="absolute inset-0" style={{ clipPath: campusClip }}>
                 {mapItems.map((item, markerIndex) => {
                   const position = toWorldPixel(item.lat, item.lng, mapZoom);
-                  const left = position.x - centerPixel.x;
-                  const top = position.y - centerPixel.y;
+                  const samePlaceItems = mapItems.filter(candidate => candidate.location === item.location);
+                  const samePlaceIndex = samePlaceItems.findIndex(candidate => candidate.id === item.id);
+                  const spread = markerSpreadOffset(samePlaceIndex, samePlaceItems.length);
+                  const left = position.x - centerPixel.x + spread.x;
+                  const top = position.y - centerPixel.y + spread.y;
                   const fields = getMapItemFields(item);
                   return <div key={item.id} className="absolute z-10 -translate-x-1/2 -translate-y-1/2" style={{ left: `calc(50% + ${left}px)`, top: `calc(50% + ${top}px)`, transition: isDraggingMap ? 'none' : `left ${FLY_MS}ms ease-out, top ${FLY_MS}ms ease-out` }}>
-                    <button type="button" data-map-marker onPointerDown={event => event.stopPropagation()} onMouseDown={event => event.stopPropagation()} onClick={() => setFocusedMapItem(item)} style={{ animationDelay: `${(markerIndex % 8) * 110}ms` }} className={`group flex h-9 w-9 animate-marker-float items-center justify-center rounded-full border-[3px] border-white text-sm font-bold text-white shadow-lg transition group-hover:scale-110 ${focusedSearchId === item.id ? 'ring-4 ring-cyan-300 ring-offset-2' : ''} ${item.status === 'resolved' ? 'bg-zinc-600' : item.status === 'lost' ? 'bg-rose-600' : 'bg-emerald-600'}`} aria-label={`Show ${fields.name} on map`}>
+                    <button type="button" data-map-marker onPointerDown={event => event.stopPropagation()} onMouseDown={event => event.stopPropagation()} onClick={() => setFocusedMapItem(item)} style={{ animationDelay: `${(markerIndex % 8) * 110}ms` }} className={`group flex h-9 w-9 animate-marker-float items-center justify-center rounded-full border-[3px] border-white text-sm font-bold text-white shadow-lg transition group-hover:scale-110 ${focusedSearchId === item.id ? 'ring-4 ring-cyan-300 ring-offset-2' : ''} ${item.status === 'resolved' ? 'bg-zinc-600' : item.status === 'lost' ? 'bg-rose-600' : 'bg-emerald-600'}`} aria-label={`Show ${fields.name} on map, report ${samePlaceIndex + 1} of ${samePlaceItems.length} at ${fields.building}`}>
                       {item.status === 'lost' ? '!' : <Check className="h-4 w-4" />}
                     </button>
                     {focusedMapItem?.id === item.id && <div data-map-control className={`absolute bottom-full left-1/2 mb-3 w-64 -translate-x-1/2 rounded-xl p-4 text-left shadow-xl ring-1 ${darkMode ? 'bg-zinc-900 text-zinc-100 ring-zinc-700' : 'bg-white text-zinc-800 ring-black/10'}`}>
