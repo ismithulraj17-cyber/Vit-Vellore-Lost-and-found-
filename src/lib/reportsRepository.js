@@ -30,6 +30,7 @@ export async function fetchReports() {
 
 export async function uploadReportImage(dataUrl) {
   if (!isSupabaseConfigured || !dataUrl) return dataUrl || '';
+  if (/^https?:\/\//i.test(dataUrl)) return dataUrl;
   const imageBlob = await (await fetch(dataUrl)).blob();
   const extension = imageBlob.type === 'image/png' ? 'png'
     : imageBlob.type === 'image/webp' ? 'webp' : 'jpg';

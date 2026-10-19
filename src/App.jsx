@@ -47,6 +47,13 @@ const INITIAL_MAP_CENTER = {
   lat: (CAMPUS_NORTH + CAMPUS_SOUTH) / 2,
   lon: (CAMPUS_WEST + CAMPUS_EAST) / 2,
 };
+const isPublicHttpUrl = (value) => {
+  try {
+    return ['http:', 'https:'].includes(new URL(value).protocol);
+  } catch {
+    return false;
+  }
+};
 const CATEGORY_BADGE_CLASSES = {
   Electronics: 'border-[#c8d9d7] bg-[#e8f0ee] text-[#385c58] dark:border-[#3c5955] dark:bg-[#243a37] dark:text-[#c5dcda]',
   Stationery: 'border-[#d6cbdc] bg-[#f0ebf2] text-[#5d4c66] dark:border-[#594b61] dark:bg-[#382d3d] dark:text-[#ddd0e4]',
@@ -259,6 +266,8 @@ export default function App() {
   const [verifyError, setVerifyError] = useState('');
   const [successBanner, setSuccessBanner] = useState('');
   const [databaseError, setDatabaseError] = useState('');
+  const [imageLink, setImageLink] = useState('');
+  const [imageLinkError, setImageLinkError] = useState('');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -495,6 +504,16 @@ export default function App() {
       document.getElementById('report-phone')?.focus();
       return;
     }
+    if (imageLinkError) {
+      document.getElementById('report-image-url')?.focus();
+      return;
+    }
+    const imageLinkValue = imageLink.trim();
+    if (imageLinkValue && !isPublicHttpUrl(imageLinkValue)) {
+      setImageLinkError('Enter a valid public image URL starting with http:// or https://.');
+      document.getElementById('report-image-url')?.focus();
+      return;
+    }
     const coordinates = locationMapPoint(formData.location);
     try {
       const image = isSupabaseConfigured && formData.image
@@ -527,6 +546,8 @@ export default function App() {
       title: '', category: 'Electronics', location: 'SJT (Silver Jubilee Tower)',
       status: 'lost', description: '', time: '', image: '', floor: '', landmark: '', owner: '', phone: '', contact: '', shareContact: false, verifiedPin: '1234'
     });
+    setImageLink('');
+    setImageLinkError('');
     setSuccessBanner("Your item has been successfully shared with the VIT community!");
     setTimeout(() => setSuccessBanner(''), 5000);
   };
@@ -548,6 +569,8 @@ export default function App() {
     const reader = new FileReader();
     reader.onload = () => {
       setFormData(current => ({ ...current, image: reader.result }));
+      setImageLink('');
+      setImageLinkError('');
       setDatabaseError('');
     };
     reader.readAsDataURL(file);
@@ -1177,11 +1200,15 @@ export default function App() {
               <div>
                 <label htmlFor="report-item-image" className="mb-1 block text-xs font-semibold uppercase tracking-wider">{formData.status === 'lost' ? 'Photo of lost item (optional)' : 'Photo of found item (optional)'}</label>
                 <div className={`flex items-center gap-3 rounded-xl border border-dashed p-3 ${darkMode ? 'border-zinc-600 bg-zinc-800' : 'border-zinc-300 bg-zinc-50'}`}>
-                  {formData.image ? <img src={formData.image} alt="Selected item preview" className="h-16 w-16 rounded-lg object-cover" /> : <button type="button" onClick={() => document.getElementById('report-item-image')?.click()} aria-label="Add item photo" title="Add item photo" className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-lg transition hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#668271] ${darkMode ? 'bg-[#243a37] text-[#a4bdaa]' : 'bg-[#e8f0ee] text-[#49685c]'}`}><Plus className="h-6 w-6" /></button>}
+                  {formData.image ? <img src={formData.image} alt="Selected item preview" onError={() => { if (imageLink) setImageLinkError('The link could not load an image. Use a direct, publicly accessible image URL.'); }} className="h-16 w-16 rounded-lg object-cover" /> : <button type="button" onClick={() => document.getElementById('report-item-image')?.click()} aria-label="Add item photo" title="Add item photo" className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-lg transition hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#668271] ${darkMode ? 'bg-[#243a37] text-[#a4bdaa]' : 'bg-[#e8f0ee] text-[#49685c]'}`}><Plus className="h-6 w-6" /></button>}
                   <div className="flex-1"><label htmlFor="report-item-image" className={`cursor-pointer text-sm font-semibold hover:underline ${darkMode ? 'text-[#a4bdaa]' : 'text-[#49685c]'}`}>{formData.image ? 'Change photo' : 'Choose a photo'}</label><p className={`mt-1 text-xs ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>Upload a photo for either a lost or found report. JPG, PNG or WEBP (up to 5 MB).</p></div>
-                  {formData.image && <button type="button" onClick={() => setFormData({ ...formData, image: '' })} className="text-xs font-medium text-rose-500 hover:underline">Remove</button>}
+                  {formData.image && <button type="button" onClick={() => { setFormData(current => ({ ...current, image: '' })); setImageLink(''); setImageLinkError(''); }} className="text-xs font-medium text-rose-500 hover:underline">Remove</button>}
                 </div>
                 <input id="report-item-image" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} className="sr-only" />
+                <div className="mt-3 flex items-center gap-3" aria-hidden="true"><span className={`h-px flex-1 ${darkMode ? 'bg-zinc-700' : 'bg-zinc-200'}`} /><span className={`text-[10px] font-semibold uppercase tracking-wider ${darkMode ? 'text-zinc-500' : 'text-zinc-500'}`}>or paste an image link</span><span className={`h-px flex-1 ${darkMode ? 'bg-zinc-700' : 'bg-zinc-200'}`} /></div>
+                <label htmlFor="report-image-url" className="sr-only">Image URL</label>
+                <input id="report-image-url" type="url" inputMode="url" autoComplete="url" value={imageLink} onChange={event => { const value = event.target.value; const trimmedValue = value.trim(); setImageLink(value); setImageLinkError(''); setFormData(current => ({ ...current, image: isPublicHttpUrl(trimmedValue) ? trimmedValue : '' })); }} onBlur={() => { if (!imageLink.trim()) return; setImageLinkError(isPublicHttpUrl(imageLink.trim()) ? '' : 'Enter a valid public image URL starting with http:// or https://.'); }} aria-invalid={Boolean(imageLinkError)} aria-describedby="report-image-url-hint" placeholder="https://example.com/item-photo.jpg" className={`mt-2 w-full rounded-xl border p-3 text-sm ${imageLinkError ? 'border-rose-500' : darkMode ? 'border-zinc-700 bg-zinc-900 text-white' : 'border-zinc-200 bg-white text-zinc-900'}`} />
+                <p id="report-image-url-hint" aria-live="polite" className={`mt-1 text-xs ${imageLinkError ? 'text-rose-500' : darkMode ? 'text-zinc-400' : 'text-zinc-500'}`}>{imageLinkError || 'Paste a direct, publicly accessible image URL (HTTP or HTTPS). Some image sites block external links.'}</p>
               </div>
 
               <div>
