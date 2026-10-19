@@ -298,6 +298,10 @@ export default function App() {
     shareContact: false,
     verifiedPin: '1234'
   });
+  const phoneDigitCount = formData.phone.replace(/\D/g, '').length;
+  const phoneError = formData.phone.trim() && (phoneDigitCount < 10 || phoneDigitCount > 11)
+    ? 'Wrong number. Enter a phone number with 10 or 11 digits.'
+    : '';
 
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearch(searchTerm), 300);
@@ -459,6 +463,10 @@ export default function App() {
 
   const handlePostItem = (e) => {
     e.preventDefault();
+    if (phoneError) {
+      document.getElementById('report-phone')?.focus();
+      return;
+    }
     const coordinates = locationMapPoint(formData.location);
     const newItem = withMapFields({
       id: Date.now(),
@@ -1026,7 +1034,8 @@ export default function App() {
                 <div><h3 className="text-sm font-semibold">Contact details <span className={darkMode ? 'font-normal text-zinc-400' : 'font-normal text-zinc-600'}>(optional)</span></h3><p className={`mt-1 text-xs ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>These stay private unless you choose to share them on the report.</p></div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <label className="text-xs font-semibold">Name<input autoComplete="name" value={formData.owner} onChange={event => setFormData({ ...formData, owner: event.target.value })} placeholder="Your name" className={`mt-1 w-full rounded-xl border p-3 text-sm font-normal ${darkMode ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-zinc-200'}`} /></label>
-                  <label className="text-xs font-semibold">Phone<input type="tel" autoComplete="tel" value={formData.phone} onChange={event => setFormData({ ...formData, phone: event.target.value })} placeholder="Phone number" className={`mt-1 w-full rounded-xl border p-3 text-sm font-normal ${darkMode ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-zinc-200'}`} /></label>
+                  <label className="text-xs font-semibold" htmlFor="report-phone">Phone<input id="report-phone" type="tel" inputMode="numeric" autoComplete="tel" maxLength={20} aria-invalid={Boolean(phoneError)} aria-describedby="report-phone-hint" value={formData.phone} onChange={event => setFormData({ ...formData, phone: event.target.value })} placeholder="10 or 11 digits" className={`mt-1 w-full rounded-xl border p-3 text-sm font-normal ${phoneError ? 'border-rose-500' : darkMode ? 'border-zinc-700' : 'border-zinc-200'} ${darkMode ? 'bg-zinc-900 text-white' : 'bg-white'}`} /></label>
+                  <p id="report-phone-hint" aria-live="polite" className={`text-xs ${phoneError ? 'text-rose-600 dark:text-rose-400' : darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>{phoneError || 'Enter 10 or 11 digits. Leave blank if you do not want to share a phone number.'}</p>
                   <label className="text-xs font-semibold sm:col-span-2">Email<input type="email" autoComplete="email" value={formData.contact} onChange={event => setFormData({ ...formData, contact: event.target.value })} placeholder="name@example.com" className={`mt-1 w-full rounded-xl border p-3 text-sm font-normal ${darkMode ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-zinc-200'}`} /></label>
                 </div>
                 <label className="flex items-start gap-2 text-xs leading-relaxed"><input type="checkbox" checked={formData.shareContact} onChange={event => setFormData({ ...formData, shareContact: event.target.checked })} className="mt-0.5 accent-cyan-600" /><span>Show these contact details to people viewing this report</span></label>
