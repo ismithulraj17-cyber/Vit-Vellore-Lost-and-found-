@@ -552,7 +552,9 @@ export default function App() {
     });
     setImageLink('');
     setImageLinkError('');
-    setSuccessBanner("Your item has been successfully shared with the VIT community!");
+    setSuccessBanner(isSupabaseConfigured
+      ? 'Your item is saved and shared with the VIT community across devices.'
+      : 'Your item is saved in this browser only. Connect Supabase to share it across devices.');
     setTimeout(() => setSuccessBanner(''), 5000);
   };
 
@@ -774,7 +776,12 @@ export default function App() {
             <p className={`text-[11px] font-bold uppercase tracking-[0.18em] ${darkMode ? 'text-cyan-400' : 'text-[#7c8b73]'}`}>The campus board</p>
             <h2 className={`mt-1 text-2xl font-semibold tracking-tight ${darkMode ? 'text-white' : 'text-[#19372e]'}`}>Recent reports</h2>
           </div>
-          <span className={`text-sm ${darkMode ? 'text-zinc-400' : 'text-[#768178]'}`}>{filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'} to explore</span>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <span className={`text-sm ${darkMode ? 'text-zinc-400' : 'text-[#768178]'}`}>{filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'} to explore</span>
+            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${isSupabaseConfigured ? (darkMode ? 'border-emerald-800 bg-emerald-950 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-800') : (darkMode ? 'border-amber-800 bg-amber-950 text-amber-200' : 'border-amber-200 bg-amber-50 text-amber-800')}`}>
+              {isSupabaseConfigured ? 'Shared board' : 'This device only'}
+            </span>
+          </div>
         </div>}
 
         {activeTab === 'grid' && <div className="mb-6 space-y-3">

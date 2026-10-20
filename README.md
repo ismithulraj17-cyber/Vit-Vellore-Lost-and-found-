@@ -24,3 +24,7 @@ npm run dev
 - `public/items/` - local item photos; see `PHOTO_MANIFEST.md` for the exact seed photo filenames and descriptions.
 
 Without Supabase credentials, the app runs with the local seed reports. To enable shared reports, first apply `supabase/schema.sql` in the Supabase SQL editor, copy `.env.example` to `.env.local`, and set the project URL, publishable key, and private `SUPABASE_SERVICE_ROLE_KEY`. Run `npm run seed` and type `REPLACE ALL` when prompted; this intentionally replaces all existing report rows. Then run `npm run dev`. Never add the service-role key to Vercel or any frontend environment variable.
+
+## Share reports across devices
+
+For the deployed app, apply `supabase/schema.sql` to the Supabase project, then add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in Vercel under **Project Settings → Environment Variables**. Enable them for the deployments you use and redeploy so Vite includes the settings. Reports and uploaded photos are stored in Supabase and can then load on other devices. The app labels itself **This device only** when these client settings are missing; local browser reports are not shared. `SUPABASE_SERVICE_ROLE_KEY` is only for the local seed script and must never be added to Vercel.
