@@ -108,10 +108,10 @@ begin
 end;
 $$;
 
-revoke all on function public.list_lost_found_reports() from public;
-revoke all on function public.create_lost_found_report(jsonb) from public;
-grant execute on function public.list_lost_found_reports() to anon, authenticated;
-grant execute on function public.create_lost_found_report(jsonb) to anon, authenticated;
+revoke all on function public.list_lost_found_reports() from public, authenticated;
+revoke all on function public.create_lost_found_report(jsonb) from public, authenticated;
+grant execute on function public.list_lost_found_reports() to anon;
+grant execute on function public.create_lost_found_report(jsonb) to anon;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('report-images', 'report-images', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
@@ -121,11 +121,8 @@ on conflict (id) do update set
   allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "Public can view lost and found photos" on storage.objects;
-create policy "Public can view lost and found photos"
-on storage.objects for select to anon, authenticated
-using (bucket_id = 'report-images');
 
 drop policy if exists "Visitors can upload lost and found photos" on storage.objects;
 create policy "Visitors can upload lost and found photos"
-on storage.objects for insert to anon, authenticated
+on storage.objects for insert to anon
 with check (bucket_id = 'report-images');
