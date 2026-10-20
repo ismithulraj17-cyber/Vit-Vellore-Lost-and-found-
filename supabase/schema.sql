@@ -55,7 +55,7 @@ as $$
   select r.id, r.title, r.category, r.location, r.building, r.floor,
          r.landmark, r.lat, r.lng, r.status, r.date, r."time", r.description, r.image_url,
          case when c.share_contact then c.owner else '' end,
-         case when c.share_contact then c.phone else '' end,
+         coalesce(c.phone, ''),
          case when c.share_contact then c.contact else '' end,
          coalesce(c.share_contact, false)
   from public.lost_found_reports as r
@@ -79,6 +79,9 @@ begin
   end if;
   if report->>'status' not in ('lost', 'found') then
     raise exception 'Status must be lost or found';
+  end if;
+  if regexp_replace(coalesce(report->>'phone', ''), '[^0-9]', '', 'g') !~ '^91[0-9]{10}$' then
+    raise exception 'A valid +91 phone number with 10 digits is required';
   end if;
   if char_length(report->>'title') > 100 or char_length(report->>'description') > 1000 then
     raise exception 'Report text is too long';

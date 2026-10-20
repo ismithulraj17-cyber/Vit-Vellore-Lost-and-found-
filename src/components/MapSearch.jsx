@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapPin, Search, X } from 'lucide-react';
 import { getMapItemFields, searchLocationItems, searchMapItems } from '../lib/mapSearch';
 
@@ -20,8 +20,6 @@ export default function MapSearch({ items, value, onChange, onSelectItem, darkMo
     return () => clearTimeout(timer);
   }, [locationValue]);
 
-  useEffect(() => { setLocationValue(''); setDebouncedLocation(''); }, [debouncedValue]);
-
   const matches = useMemo(() => searchMapItems(items, debouncedValue), [items, debouncedValue]);
   const duplicateName = matches.length > 1 && matches.every(item => getMapItemFields(item).name.toLocaleLowerCase() === getMapItemFields(matches[0]).name.toLocaleLowerCase());
   const locationMatches = useMemo(() => duplicateName ? searchLocationItems(matches, debouncedLocation) : [], [duplicateName, matches, debouncedLocation]);
@@ -29,20 +27,21 @@ export default function MapSearch({ items, value, onChange, onSelectItem, darkMo
     ? (debouncedLocation ? (locationMatches.length ? locationMatches : matches) : matches)
     : matches;
 
-  const selectItem = (item) => {
+  const selectItem = useCallback((item) => {
     setIsOpen(false);
     setLocationValue('');
+    setDebouncedLocation('');
     onSelectItem(item);
-  };
+  }, [onSelectItem]);
 
   useEffect(() => {
-    if (duplicateName && debouncedLocation.trim() && locationMatches.length === 1) selectItem(locationMatches[0]);
-  // A unique location keyword match should focus the matching report.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [duplicateName, debouncedLocation, locationMatches]);
+    if (!duplicateName || !debouncedLocation.trim() || locationMatches.length !== 1) return undefined;
+    const timer = window.setTimeout(() => selectItem(locationMatches[0]), 0);
+    return () => window.clearTimeout(timer);
+  }, [duplicateName, debouncedLocation, locationMatches, selectItem]);
 
   const handleKeyDown = (event) => {
-    if (event.key === 'Escape') { event.preventDefault(); setIsOpen(false); setLocationValue(''); return; }
+    if (event.key === 'Escape') { event.preventDefault(); setIsOpen(false); setLocationValue(''); setDebouncedLocation(''); return; }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       if (!isOpen) setIsOpen(true);
       if (options.length) {
@@ -67,8 +66,8 @@ export default function MapSearch({ items, value, onChange, onSelectItem, darkMo
   return <div className="absolute left-4 top-4 z-30 w-[min(380px,calc(100%-5.5rem))]" data-map-control>
     <div className={`flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-sm ${darkMode ? 'border-zinc-700 bg-zinc-900/95 text-zinc-100' : 'border-[#e3dfd4] bg-[#fffefa]/95 text-[#19372e]'}`}>
       <Search className={`h-5 w-5 shrink-0 ${darkMode ? 'text-[#a4bdaa]' : 'text-[#668271]'}`} />
-      <input aria-label="Search lost and found reports" aria-expanded={isOpen} aria-controls="map-search-results" role="combobox" value={value} onChange={event => { onChange(event.target.value); setIsOpen(true); setActiveIndex(0); }} onFocus={() => value.trim() && setIsOpen(true)} onKeyDown={handleKeyDown} placeholder="Search items or locations" className={`w-full bg-transparent text-sm outline-none placeholder:opacity-65 ${darkMode ? 'text-zinc-100 placeholder:text-zinc-400' : 'text-[#19372e] placeholder:text-[#768178]'}`} />
-      {value && <button type="button" aria-label="Clear search" onClick={() => { onChange(''); setLocationValue(''); setIsOpen(false); }} className={`rounded p-1 ${darkMode ? 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100' : 'text-[#768178] hover:bg-[#edf3ed] hover:text-[#19372e]'}`}><X className="h-4 w-4" /></button>}
+      <input aria-label="Search lost and found reports" aria-expanded={isOpen} aria-controls="map-search-results" aria-activedescendant={isOpen && options.length ? `map-search-option-${Math.min(activeIndex, options.length - 1)}` : undefined} role="combobox" value={value} onChange={event => { setLocationValue(''); setDebouncedLocation(''); onChange(event.target.value); setIsOpen(true); setActiveIndex(0); }} onFocus={() => value.trim() && setIsOpen(true)} onKeyDown={handleKeyDown} placeholder="Search items or locations" className={`w-full bg-transparent text-sm outline-none placeholder:opacity-65 ${darkMode ? 'text-zinc-100 placeholder:text-zinc-400' : 'text-[#19372e] placeholder:text-[#768178]'}`} />
+      {value && <button type="button" aria-label="Clear search" onClick={() => { onChange(''); setLocationValue(''); setDebouncedLocation(''); setIsOpen(false); }} className={`rounded p-1 ${darkMode ? 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100' : 'text-[#768178] hover:bg-[#edf3ed] hover:text-[#19372e]'}`}><X className="h-4 w-4" /></button>}
     </div>
 
     {isOpen && value.trim() && <div id="map-search-results" role="listbox" className={`mt-2 max-h-[min(65vh,380px)] overflow-y-auto rounded-2xl border p-2 shadow-xl ${darkMode ? 'border-zinc-700 bg-zinc-900 text-zinc-100' : 'border-[#e3dfd4] bg-[#fffefa] text-[#19372e]'}`}>

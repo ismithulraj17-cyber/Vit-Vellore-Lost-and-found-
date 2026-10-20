@@ -9,8 +9,8 @@ import SEED_ITEMS from './data/seedItems.json';
 import { 
   Search, Plus, MapPin, Calendar, ShieldCheck,
   CheckCircle, AlertTriangle, 
-  Sun, Moon, Compass, Filter, Sparkles, Eye, X, Check,
-  ArrowRight, AlertCircle, ZoomIn, ZoomOut, Navigation
+  Sun, Moon, Compass, Sparkles, X, Check,
+  ArrowRight, AlertCircle, ZoomIn, ZoomOut, Navigation, Phone
 } from 'lucide-react';
 
 const VIT_LOCATIONS = [
@@ -64,35 +64,15 @@ const CATEGORY_BADGE_CLASSES = {
   Keys: 'border-[#d5d8bd] bg-[#eef0e1] text-[#5e6339] dark:border-[#535638] dark:bg-[#373a27] dark:text-[#d9dcba]',
   Bags: 'border-[#dfcdbd] bg-[#f2e9e0] text-[#76563f] dark:border-[#644b39] dark:bg-[#3c3027] dark:text-[#e1cbb5]',
 };
-const CATEGORY_TEXT_CLASSES = {
-  Electronics: 'text-[#385c58] dark:text-[#b6d2cf]',
-  Stationery: 'text-[#705579] dark:text-[#d7c0e1]',
-  Personal: 'text-[#806329] dark:text-[#e5d09b]',
-  'ID & Cards': 'text-[#935452] dark:text-[#e5bbbb]',
-  Books: 'text-[#4a6380] dark:text-[#bbcee2]',
-  Clothing: 'text-[#4e6b4b] dark:text-[#bfd5b9]',
-  Keys: 'text-[#68703b] dark:text-[#d2d99e]',
-  Bags: 'text-[#936344] dark:text-[#e4c2a3]',
-};
-const CATEGORY_LIGHT_TEXT_CLASSES = {
-  Electronics: 'text-[#385c58]',
-  Stationery: 'text-[#705579]',
-  Personal: 'text-[#806329]',
-  'ID & Cards': 'text-[#935452]',
-  Books: 'text-[#4a6380]',
-  Clothing: 'text-[#4e6b4b]',
-  Keys: 'text-[#68703b]',
-  Bags: 'text-[#936344]',
-};
-const STATUS_TEXT_CLASSES = {
-  lost: 'text-[#a45143] dark:text-[#e39c8d]',
-  found: 'text-[#47734f] dark:text-[#a8d0ad]',
-  resolved: 'text-[#686e66] dark:text-zinc-300',
-};
-const STATUS_LIGHT_TEXT_CLASSES = {
-  lost: 'text-[#a45143]',
-  found: 'text-[#47734f]',
-  resolved: 'text-[#686e66]',
+const CATEGORY_FILTER_BORDER_COLORS = {
+  Electronics: ['#c8d9d7', '#3c5955'],
+  Stationery: ['#d6cbdc', '#594b61'],
+  Personal: ['#e2d4b6', '#625334'],
+  'ID & Cards': ['#e2caca', '#684746'],
+  Books: ['#cbd5e0', '#46586c'],
+  Clothing: ['#ccd8c9', '#465a42'],
+  Keys: ['#d5d8bd', '#535638'],
+  Bags: ['#dfcdbd', '#644b39'],
 };
 const toWorldPixel = (lat, lon, zoom) => {
   const size = 256 * (2 ** zoom);
@@ -201,6 +181,7 @@ const locationMapPoint = (location) => {
 };
 
 const RESOLVED_ITEMS_KEY = 'vit-lost-and-found:resolved-items-seed-v2';
+const REPORTS_LOAD_TIMEOUT_MS = 12_000;
 const readResolvedItems = () => {
   try { return JSON.parse(localStorage.getItem(RESOLVED_ITEMS_KEY) || '{}'); }
   catch { return {}; }
@@ -224,7 +205,7 @@ export default function App() {
       ...(resolved[item.id] ? { status: 'resolved', resolvedAt: resolved[item.id] } : {}),
     }));
   });
-  const [mapClock, setMapClock] = useState(Date.now());
+  const [mapClock, setMapClock] = useState(() => Date.now());
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -237,6 +218,9 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [mapZoom, setMapZoom] = useState(BASE_ZOOM);
   const [mapMinZoom, setMapMinZoom] = useState(BASE_ZOOM);
+  const [mapViewportSize, setMapViewportSize] = useState({ width: 600, height: 600 });
+  const [mapTileError, setMapTileError] = useState(false);
+  const [mapTileRetry, setMapTileRetry] = useState(0);
   const [mapCenter, setMapCenter] = useState(INITIAL_MAP_CENTER);
   const [isDraggingMap, setIsDraggingMap] = useState(false);
   const dragStartRef = React.useRef(null);
@@ -245,7 +229,6 @@ export default function App() {
   const mapCenterFrameRef = React.useRef(null);
   const pendingMapCenterRef = React.useRef(null);
   const mapZoomRef = React.useRef(mapZoom);
-  mapZoomRef.current = mapZoom;
   const mapViewportRef = React.useRef(null);
   const [focusedSearchId, setFocusedSearchId] = useState(null);
   const [focusedMapItem, setFocusedMapItem] = useState(null);
@@ -253,8 +236,6 @@ export default function App() {
     ...items.filter(item => item.status === 'resolved').map(item => String(item.id)),
     ...Object.keys(readResolvedItems()),
   ]).size;
-  const visibleMapItems = items.filter(item => item.status !== 'resolved' || !item.resolvedAt || mapClock - item.resolvedAt < 60_000);
-
   useEffect(() => {
     const expiring = items.filter(item => item.status === 'resolved' && item.resolvedAt)
       .map(item => item.resolvedAt + 60_000).filter(expiry => expiry > Date.now());
@@ -290,8 +271,8 @@ export default function App() {
     verifiedPin: '1234'
   });
   const phoneDigitCount = formData.phone.replace(/\D/g, '').length;
-  const phoneError = formData.phone.trim() && phoneDigitCount !== 10
-    ? 'Wrong number. Enter exactly 10 digits after +91.'
+  const phoneError = phoneDigitCount !== 10
+    ? formData.phone.trim() ? 'Wrong number. Enter exactly 10 digits after +91.' : 'Phone number is required.'
     : '';
 
   useEffect(() => {
@@ -302,7 +283,17 @@ export default function App() {
   useEffect(() => {
     let active = true;
     if (isSupabaseConfigured) {
-      fetchReports()
+      let timeoutId;
+      const requestWithTimeout = Promise.race([
+        fetchReports(),
+        new Promise((_, reject) => {
+          timeoutId = window.setTimeout(
+            () => reject(new Error('Reports request timed out')),
+            REPORTS_LOAD_TIMEOUT_MS,
+          );
+        }),
+      ]);
+      requestWithTimeout
         .then(reports => {
           if (!active) return;
           const resolved = readResolvedItems();
@@ -319,8 +310,14 @@ export default function App() {
             setDatabaseError('Could not connect to the reports database. Showing the local campus listings instead.');
           }
         })
-        .finally(() => { if (active) setIsInitialLoading(false); });
-      return () => { active = false; };
+        .finally(() => {
+          window.clearTimeout(timeoutId);
+          if (active) setIsInitialLoading(false);
+        });
+      return () => {
+        active = false;
+        window.clearTimeout(timeoutId);
+      };
     }
     const timer = window.setTimeout(() => setIsInitialLoading(false), 900);
     return () => {
@@ -339,10 +336,16 @@ export default function App() {
   }, [darkMode]);
 
   useEffect(() => {
+    mapZoomRef.current = mapZoom;
+  }, [mapZoom]);
+
+  useEffect(() => {
     const viewport = mapViewportRef.current;
     if (activeTab !== 'map' || !viewport) return undefined;
+    setMapTileError(false);
     const updateFitZoom = () => {
       const { width, height } = viewport.getBoundingClientRect();
+      setMapViewportSize(current => current.width === width && current.height === height ? current : { width, height });
       const west = toWorldPixel(INITIAL_MAP_CENTER.lat, CAMPUS_WEST, BASE_ZOOM).x;
       const east = toWorldPixel(INITIAL_MAP_CENTER.lat, CAMPUS_EAST, BASE_ZOOM).x;
       const north = toWorldPixel(CAMPUS_NORTH, INITIAL_MAP_CENTER.lon, BASE_ZOOM).y;
@@ -474,6 +477,16 @@ export default function App() {
   const mapItems = filteredItems.filter(item =>
     item.status !== 'resolved' || !item.resolvedAt || mapClock - item.resolvedAt < 60_000
   );
+  const mapMarkersById = new Map();
+  const mapItemsByLocation = new Map();
+  for (const item of mapItems) {
+    const group = mapItemsByLocation.get(item.location) || [];
+    group.push(item);
+    mapItemsByLocation.set(item.location, group);
+  }
+  for (const group of mapItemsByLocation.values()) {
+    group.forEach((item, index) => mapMarkersById.set(String(item.id), { index, count: group.length }));
+  }
   const handleLocationFilterChange = (location) => {
     setLocationFilter(location);
     setFocusedMapItem(null);
@@ -676,7 +689,7 @@ export default function App() {
               </div>
             </div>
             <div className="relative grid grid-cols-3 gap-2 sm:gap-3 lg:min-w-[330px]">
-              {[{ value: items.filter(item => item.status === 'lost').length, label: 'Lost' }, { value: items.filter(item => item.status === 'found').length, label: 'Found' }, { value: reunitedCount, label: 'Reunited' }].map(stat => <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/[0.07] px-3 py-4 text-center backdrop-blur sm:px-5 sm:py-5"><p className="text-2xl font-semibold text-white sm:text-3xl">{stat.value}</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55 sm:text-xs">{stat.label}</p></div>)}
+              {[{ value: items.filter(item => item.status === 'lost').length, label: 'Lost' }, { value: items.filter(item => item.status === 'found').length, label: 'Found' }, { value: reunitedCount, label: 'Reunited' }].map(stat => <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/[0.07] px-3 py-4 text-center backdrop-blur sm:px-5 sm:py-5"><p className="text-2xl font-semibold text-white sm:text-3xl">{stat.value}</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/75 sm:text-xs">{stat.label}</p></div>)}
             </div>
           </div>
         </section>
@@ -786,7 +799,14 @@ export default function App() {
 
         {activeTab === 'grid' && <div className="mb-6 space-y-3">
           <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter reports by category">
-            {['All', ...Object.keys(CATEGORY_BADGE_CLASSES)].map(category => <button key={category} type="button" onClick={() => setCategoryFilter(category)} aria-pressed={categoryFilter === category} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition hover:brightness-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#668271] ${category === 'All' ? (categoryFilter === 'All' ? 'border-[#24483a] bg-[#24483a] text-white' : darkMode ? 'border-zinc-700 bg-zinc-900 text-zinc-300' : 'border-[#dfddd3] bg-[#fffefa] text-[#64746a]') : `${CATEGORY_BADGE_CLASSES[category]} ${categoryFilter === category ? 'ring-2 ring-[#e9954e] ring-offset-1 dark:ring-offset-zinc-950' : ''}`}`}>{category}</button>)}
+            {['All', ...Object.keys(CATEGORY_BADGE_CLASSES)].map(category => {
+              const isSelected = categoryFilter === category;
+              const categoryBorder = category === 'All'
+                ? (darkMode ? '#52525b' : '#dfddd3')
+                : CATEGORY_FILTER_BORDER_COLORS[category][darkMode ? 1 : 0];
+              const borderColor = isSelected ? '#e9954e' : categoryBorder;
+              return <button key={category} type="button" onClick={() => setCategoryFilter(category)} aria-pressed={isSelected} style={{ borderColor, '--category-border-color': '#e9954e' }} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition hover:brightness-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--category-border-color)] ${category === 'All' ? (isSelected ? 'border-[#24483a] bg-[#24483a] text-white' : darkMode ? 'border-zinc-700 bg-zinc-900 text-zinc-300' : 'border-[#fffefa] bg-[#fffefa] text-[#64746a]') : `border-2 ${CATEGORY_BADGE_CLASSES[category]} ${isSelected ? 'font-bold' : ''}`}`}>{category}</button>;
+            })}
           </div>
           <div className="flex items-center gap-2" role="group" aria-label="Show lost or found reports">
             {[['all', 'All items'], ['lost', 'Lost'], ['found', 'Found'], ['resolved', 'Resolved']].map(([status, label]) => <button key={status} type="button" onClick={() => setStatusFilter(status)} aria-pressed={statusFilter === status} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${statusFilter === status ? 'bg-[#ef9c55] text-[#19372e]' : darkMode ? 'text-zinc-400 hover:bg-zinc-900' : 'text-[#718077] hover:bg-white'}`}>{label}</button>)}
@@ -823,7 +843,7 @@ export default function App() {
                   >
                     <div>
                       {item.image ? <div className="item-photo relative aspect-[16/9] overflow-hidden bg-[#e9e8df] dark:bg-zinc-800">
-                        <img src={item.image} alt={`Illustrative reference photo for ${item.title}`} loading="lazy" onError={event => event.currentTarget.closest('.item-photo')?.remove()} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
+                        <img src={item.image} alt={`Illustrative reference photo for ${item.title}`} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
                         <div className="absolute top-3 left-3">
                         <span className={`rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide ${item.status === 'lost' ? 'bg-[#ff2758] text-white' : item.status === 'found' ? 'bg-[#00bd88] text-[#073b31]' : 'bg-zinc-300 text-zinc-700'}`}>
                             {item.status}
@@ -843,7 +863,7 @@ export default function App() {
                       </div>}
 
                       <div className="px-6 pb-5 pt-6">
-                        <h2 className={`mb-1.5 line-clamp-1 text-[19px] font-semibold tracking-[-0.02em] transition-colors ${darkMode ? 'group-hover:text-cyan-400' : 'group-hover:text-[#53735d]'}`}>
+                        <h2 className={`mb-1.5 line-clamp-1 text-xl font-bold tracking-[-0.02em] transition-colors ${darkMode ? 'text-zinc-100 group-hover:text-[#f0ad70]' : 'text-[#173b2c] group-hover:text-[#a9683a]'}`}>
                           {item.title}
                         </h2>
                         <p className={`mb-5 line-clamp-2 min-h-10 text-sm leading-5 ${darkMode ? 'text-zinc-400' : 'text-[#657168]'}`}>
@@ -863,8 +883,11 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className={`flex items-center justify-between border-t px-6 py-4 text-sm font-medium ${darkMode ? 'border-zinc-800 bg-zinc-900/50' : 'border-[#f0eee8] bg-[#faf9f6]'}`}>
-                      <span className={darkMode ? 'text-zinc-400' : 'text-[#737b73]'}>Reporter identity kept private</span>
+                    <div className={`flex flex-col gap-2 border-t px-6 py-4 text-sm font-medium sm:flex-row sm:items-center sm:justify-between ${darkMode ? 'border-zinc-800 bg-zinc-900/50' : 'border-[#f0eee8] bg-[#faf9f6]'}`}>
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                        {item.shareContact && item.owner && <span className={darkMode ? 'text-zinc-200' : 'text-[#35483b]'}>{item.owner}</span>}
+                        {item.phone && <a className={`inline-flex items-center gap-1.5 hover:underline ${darkMode ? 'text-zinc-300' : 'text-[#526058]'}`} href={`tel:${item.phone}`} aria-label={`Call reporter at ${item.phone}`}><Phone className="h-3.5 w-3.5" />{item.phone}</a>}
+                      </div>
                       <span className={`flex items-center gap-1 group-hover:underline ${darkMode ? 'text-[#a4bdaa]' : 'text-[#8c5935]'}`}>
                         View Details & Claim <ArrowRight className="w-3.5 h-3.5" />
                       </span>
@@ -887,6 +910,11 @@ export default function App() {
               <span className={`hidden rounded-full border px-3 py-1.5 text-xs font-medium sm:inline-flex ${darkMode ? 'border-zinc-700 bg-zinc-800 text-zinc-300' : 'border-[#e5e1d7] bg-[#f7f6f0] text-[#64746a]'}`}>{mapItems.length} matching reports</span>
             </div>
 
+            {mapTileError && <div role="status" className={`flex items-center justify-between gap-3 border-b px-4 py-2.5 text-xs ${darkMode ? 'border-zinc-800 bg-zinc-800/60 text-zinc-200' : 'border-[#e8e4da] bg-[#f7f6f0] text-[#3c5146]'}`}>
+              <span>Some map tiles did not load.</span>
+              <button type="button" onClick={() => { setMapTileError(false); setMapTileRetry(value => value + 1); }} className="shrink-0 font-semibold underline underline-offset-2">Retry map</button>
+            </div>}
+
             {(() => {
               const centerPixel = toWorldPixel(mapCenter.lat, mapCenter.lon, mapZoom);
               // Fetch the next sharper integer tile level and scale it down at fractional fit zooms.
@@ -895,9 +923,8 @@ export default function App() {
               const tileBaseX = Math.floor(centerPixel.x / tileSize);
               const tileBaseY = Math.floor(centerPixel.y / tileSize);
               const tileCount = 2 ** tileZoom;
-              const viewport = mapViewportRef.current;
-              const viewportWidth = viewport?.clientWidth ?? 600;
-              const viewportHeight = viewport?.clientHeight ?? 600;
+              const viewportWidth = mapViewportSize.width;
+              const viewportHeight = mapViewportSize.height;
               const campusWest = toWorldPixel(INITIAL_MAP_CENTER.lat, CAMPUS_WEST, mapZoom).x;
               const campusEast = toWorldPixel(INITIAL_MAP_CENTER.lat, CAMPUS_EAST, mapZoom).x;
               const campusNorth = toWorldPixel(CAMPUS_NORTH, INITIAL_MAP_CENTER.lon, mapZoom).y;
@@ -907,14 +934,24 @@ export default function App() {
               const cropBottom = Math.max(0, viewportHeight / 2 - (campusSouth - centerPixel.y));
               const cropLeft = Math.max(0, viewportWidth / 2 + campusWest - centerPixel.x);
               const campusClip = `inset(${cropTop}px ${cropRight}px ${cropBottom}px ${cropLeft}px)`;
-              const xOffsets = Array.from({ length: 7 }, (_, index) => index - 3);
-              const yOffsets = Array.from({ length: 5 }, (_, index) => index - 2);
+              const firstVisibleTileX = Math.floor((centerPixel.x - viewportWidth / 2) / tileSize);
+              const lastVisibleTileX = Math.floor((centerPixel.x + viewportWidth / 2) / tileSize);
+              const firstVisibleTileY = Math.max(0, Math.floor((centerPixel.y - viewportHeight / 2) / tileSize));
+              const lastVisibleTileY = Math.min(tileCount - 1, Math.floor((centerPixel.y + viewportHeight / 2) / tileSize));
+              const xOffsets = Array.from(
+                { length: lastVisibleTileX - firstVisibleTileX + 1 },
+                (_, index) => firstVisibleTileX + index - tileBaseX,
+              );
+              const yOffsets = Array.from(
+                { length: lastVisibleTileY - firstVisibleTileY + 1 },
+                (_, index) => firstVisibleTileY + index - tileBaseY,
+              );
               const tiles = yOffsets.flatMap(offsetY => xOffsets.map(offsetX => {
                 const rawX = tileBaseX + offsetX;
                 const tileX = ((rawX % tileCount) + tileCount) % tileCount;
-                const tileY = Math.max(0, Math.min(tileCount - 1, tileBaseY + offsetY));
+                const tileY = tileBaseY + offsetY;
                 return {
-                  key: `${offsetX}-${offsetY}`,
+                  key: `${offsetX}-${offsetY}-${mapTileRetry}`,
                   x: rawX * tileSize - centerPixel.x,
                   y: (tileBaseY + offsetY) * tileSize - centerPixel.y,
                   url: `https://tile.openstreetmap.org/${tileZoom}/${tileX}/${tileY}.png`,
@@ -926,9 +963,6 @@ export default function App() {
                 onPointerMove={handleMapPointerMove}
                 onPointerUp={handleMapPointerUp}
                 onPointerCancel={handleMapPointerUp}
-                onMouseDown={handleMapPointerDown}
-                onMouseMove={handleMapPointerMove}
-                onMouseUp={handleMapPointerUp}
                 onKeyDown={event => {
                   if (event.target !== event.currentTarget) return;
                   if (event.key === '+' || event.key === '=') { event.preventDefault(); handleMapZoom(1); }
@@ -940,7 +974,7 @@ export default function App() {
                 className={`relative w-full touch-none overflow-hidden bg-[#e8eef0] outline-none focus-visible:ring-2 focus-visible:ring-[#668271] dark:focus-visible:ring-[#a4bdaa] ${isDraggingMap ? 'cursor-grabbing' : 'cursor-grab'}`}
               >
                 <div className="absolute inset-0" style={{ clipPath: campusClip }}>
-                {tiles.map(tile => <img key={tile.key} draggable="false" decoding="async" src={tile.url} alt="" className="pointer-events-none absolute max-w-none select-none" style={{ width: `${tileSize}px`, height: `${tileSize}px`, left: `calc(50% + ${tile.x}px)`, top: `calc(50% + ${tile.y}px)`, transition: isDraggingMap ? 'none' : `left ${FLY_MS}ms ease-out, top ${FLY_MS}ms ease-out, width ${FLY_MS}ms ease-out, height ${FLY_MS}ms ease-out` }} />)}
+                {tiles.map(tile => <img key={tile.key} draggable="false" decoding="async" src={tile.url} onError={() => setMapTileError(true)} alt="" className="pointer-events-none absolute max-w-none select-none" style={{ width: `${tileSize}px`, height: `${tileSize}px`, left: `calc(50% + ${tile.x}px)`, top: `calc(50% + ${tile.y}px)`, transition: isDraggingMap ? 'none' : `left ${FLY_MS}ms ease-out, top ${FLY_MS}ms ease-out, width ${FLY_MS}ms ease-out, height ${FLY_MS}ms ease-out` }} />)}
                 </div>
 
                 <MapSearch items={mapItems} value={searchTerm} onChange={value => { setSearchTerm(value); setFocusedSearchId(null); }} onSelectItem={focusSearchResult} darkMode={darkMode} />
@@ -955,14 +989,13 @@ export default function App() {
                 <div className="absolute inset-0" style={{ clipPath: campusClip }}>
                 {mapItems.map((item, markerIndex) => {
                   const position = toWorldPixel(item.lat, item.lng, mapZoom);
-                  const samePlaceItems = mapItems.filter(candidate => candidate.location === item.location);
-                  const samePlaceIndex = samePlaceItems.findIndex(candidate => candidate.id === item.id);
-                  const spread = markerSpreadOffset(samePlaceIndex, samePlaceItems.length);
+                  const samePlace = mapMarkersById.get(String(item.id)) || { index: 0, count: 1 };
+                  const spread = markerSpreadOffset(samePlace.index, samePlace.count);
                   const left = position.x - centerPixel.x + spread.x;
                   const top = position.y - centerPixel.y + spread.y;
                   const fields = getMapItemFields(item);
                   return <div key={item.id} className="absolute z-10 -translate-x-1/2 -translate-y-1/2" style={{ left: `calc(50% + ${left}px)`, top: `calc(50% + ${top}px)`, transition: isDraggingMap ? 'none' : `left ${FLY_MS}ms ease-out, top ${FLY_MS}ms ease-out` }}>
-                    <button type="button" data-map-marker onPointerDown={event => event.stopPropagation()} onMouseDown={event => event.stopPropagation()} onClick={() => setFocusedMapItem(item)} style={{ animationDelay: `${(markerIndex % 8) * 110}ms` }} className={`group flex h-9 w-9 animate-marker-float items-center justify-center rounded-full border-[3px] border-white text-sm font-bold text-white shadow-md transition group-hover:scale-110 ${focusedSearchId === item.id ? 'ring-4 ring-[#e2a267] ring-offset-2' : ''} ${item.status === 'resolved' ? 'bg-[#787d74]' : item.status === 'lost' ? 'bg-[#a75c49]' : 'bg-[#54755a]'}`} aria-label={`Show ${fields.name} on map, report ${samePlaceIndex + 1} of ${samePlaceItems.length} at ${fields.building}`}>
+                    <button type="button" data-map-marker onPointerDown={event => event.stopPropagation()} onClick={() => setFocusedMapItem(item)} style={{ animationDelay: `${(markerIndex % 8) * 110}ms` }} className={`group flex h-9 w-9 animate-marker-float motion-reduce:animate-none items-center justify-center rounded-full border-[3px] border-white text-sm font-bold text-white shadow-md transition group-hover:scale-110 ${focusedSearchId === item.id ? 'ring-4 ring-[#e2a267] ring-offset-2' : ''} ${item.status === 'resolved' ? 'bg-[#787d74]' : item.status === 'lost' ? 'bg-[#a75c49]' : 'bg-[#54755a]'}`} aria-label={`Show ${fields.name} on map, report ${samePlace.index + 1} of ${samePlace.count} at ${fields.building}`}>
                       {item.status === 'lost' ? '!' : <Check className="h-4 w-4" />}
                     </button>
                     {focusedMapItem?.id === item.id && <div data-map-control className={`absolute bottom-full left-1/2 mb-3 w-64 -translate-x-1/2 rounded-2xl border p-4 text-left shadow-xl ${darkMode ? 'border-zinc-700 bg-zinc-900 text-zinc-100' : 'border-[#e3dfd4] bg-[#fffefa] text-[#19372e]'}`}>
@@ -1018,7 +1051,7 @@ export default function App() {
             <div className="p-6 overflow-y-auto space-y-4">
               <div>
                 <span className="text-xs font-semibold text-cyan-500 uppercase tracking-wide">{selectedItem.category}</span>
-                <h2 id="selected-item-title" className="text-xl font-bold mt-0.5">{selectedItem.title}</h2>
+                <h2 id="selected-item-title" className={`mt-0.5 text-xl font-bold tracking-tight ${darkMode ? 'text-zinc-100' : 'text-[#173b2c]'}`}>{selectedItem.title}</h2>
                 <p className={`text-sm mt-2 leading-relaxed ${darkMode ? 'text-zinc-300' : 'text-zinc-600'}`}>
                   {selectedItem.description}
                 </p>
@@ -1045,13 +1078,13 @@ export default function App() {
                 <div className="space-y-3 pt-2">
                   <div className={`p-4 rounded-2xl border space-y-2 ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-cyan-50/60 border-cyan-100'}`}>
                     <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-500 flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4" /> {selectedItem.shareContact ? 'Contact details' : 'Private handover'}
+                      <ShieldCheck className="w-4 h-4" /> Contact reporter
                     </h3>
-                    {selectedItem.shareContact && (selectedItem.owner || selectedItem.phone || selectedItem.contact) ? <div className="pt-1 space-y-1 text-sm">
-                      {selectedItem.owner && <p>{selectedItem.owner}</p>}
-                      {selectedItem.phone && <p><a className="text-cyan-700 hover:underline dark:text-cyan-400" href={`tel:${selectedItem.phone}`}>{selectedItem.phone}</a></p>}
-                      {selectedItem.contact && <p><a className="text-cyan-700 hover:underline dark:text-cyan-400" href={`mailto:${selectedItem.contact}`}>{selectedItem.contact}</a></p>}
-                    </div> : <p className="pt-1 text-sm leading-relaxed">The reporter chose not to share contact details. Arrange an in-person handover at the campus security or lost-and-found desk.</p>}
+                    <div className="pt-1 space-y-1 text-sm">
+                      {selectedItem.shareContact && selectedItem.owner && <p>{selectedItem.owner}</p>}
+                      {selectedItem.phone ? <p><a className="text-cyan-700 hover:underline dark:text-cyan-400" href={`tel:${selectedItem.phone}`}>{selectedItem.phone}</a></p> : <p className="leading-relaxed">Phone details are unavailable for this older report. Arrange an in-person handover at the campus security or lost-and-found desk.</p>}
+                      {selectedItem.shareContact && selectedItem.contact && <p><a className="text-cyan-700 hover:underline dark:text-cyan-400" href={`mailto:${selectedItem.contact}`}>{selectedItem.contact}</a></p>}
+                    </div>
                   </div>
 
                   {selectedItem.status !== 'resolved' && (
@@ -1195,17 +1228,17 @@ export default function App() {
                 </label>
               </div>
 
-              <p className={`rounded-xl border p-3 text-xs leading-relaxed ${darkMode ? 'border-[#3c5955] bg-[#243a37] text-[#c5dcda]' : 'border-[#d5e1d7] bg-[#edf3ed] text-[#42604d]'}`}>Avoid personal details in photos. {isSupabaseConfigured ? 'Reports and uploaded photos are saved to the campus database; contact details are visible only when you choose to share them.' : 'This preview keeps reports in this browser session. Connect the database to share reports across devices.'}</p>
+              <p className={`rounded-xl border p-3 text-xs leading-relaxed ${darkMode ? 'border-[#3c5955] bg-[#243a37] text-[#c5dcda]' : 'border-[#d5e1d7] bg-[#edf3ed] text-[#42604d]'}`}>Your phone number is required and visible on the report so people can contact you. Your name is shown only if you opt in. Avoid personal details in item photos. {isSupabaseConfigured ? 'Reports and uploaded photos are saved to the campus database.' : 'This preview keeps reports in this browser session. Connect the database to share reports across devices.'}</p>
 
               <section className={`space-y-3 rounded-xl border p-4 ${darkMode ? 'border-zinc-700 bg-zinc-800/60' : 'border-zinc-200 bg-zinc-50'}`}>
-                <div><h3 className="text-sm font-semibold">Contact details <span className={darkMode ? 'font-normal text-zinc-400' : 'font-normal text-zinc-600'}>(optional)</span></h3><p className={`mt-1 text-xs ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>These stay private unless you choose to share them on the report.</p></div>
+                <div><h3 className="text-sm font-semibold">Contact details</h3><p className={`mt-1 text-xs ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>A phone number is required and will appear on the report. Your name is optional and stays private unless you choose to show it.</p></div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <label className="text-xs font-semibold">Name<input autoComplete="name" value={formData.owner} onChange={event => setFormData({ ...formData, owner: event.target.value })} placeholder="Your name" className={`mt-1 w-full rounded-xl border p-3 text-sm font-normal ${darkMode ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-zinc-200'}`} /></label>
-                  <label className="text-xs font-semibold" htmlFor="report-phone">Phone<span className={`mt-1 flex items-center overflow-hidden rounded-xl border ${phoneError ? 'border-rose-500' : darkMode ? 'border-zinc-700' : 'border-zinc-200'}`}><span className={`border-r px-3 py-3 text-sm ${darkMode ? 'border-zinc-700 bg-zinc-800 text-zinc-300' : 'border-zinc-200 bg-zinc-50 text-zinc-600'}`}>+91</span><input id="report-phone" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10} aria-invalid={Boolean(phoneError)} aria-describedby="report-phone-hint" value={formData.phone} onChange={event => setFormData({ ...formData, phone: event.target.value.replace(/\D/g, '').slice(0, 10) })} placeholder="10-digit number" className={`min-w-0 flex-1 bg-transparent p-3 text-sm font-normal outline-none ${darkMode ? 'text-white' : 'text-zinc-900'}`} /></span></label>
-                  <p id="report-phone-hint" aria-live="polite" className={`text-xs ${phoneError ? 'text-rose-600 dark:text-rose-400' : darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>{phoneError || 'Enter exactly 10 digits. The +91 country code is added automatically.'}</p>
+                  <label className="text-xs font-semibold" htmlFor="report-phone">Phone <span className="text-rose-600">(required)</span><span className={`mt-1 flex items-center overflow-hidden rounded-xl border ${phoneError ? 'border-rose-500' : darkMode ? 'border-zinc-700' : 'border-zinc-200'}`}><span className={`border-r px-3 py-3 text-sm ${darkMode ? 'border-zinc-700 bg-zinc-800 text-zinc-300' : 'border-zinc-200 bg-zinc-50 text-zinc-600'}`}>+91</span><input id="report-phone" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10} required aria-invalid={Boolean(phoneError)} aria-describedby="report-phone-hint" value={formData.phone} onChange={event => setFormData({ ...formData, phone: event.target.value.replace(/\D/g, '').slice(0, 10) })} placeholder="10-digit number" className={`min-w-0 flex-1 bg-transparent p-3 text-sm font-normal outline-none ${darkMode ? 'text-white' : 'text-zinc-900'}`} /></span></label>
+                  <p id="report-phone-hint" aria-live="polite" className={`text-xs ${phoneError ? 'text-rose-600 dark:text-rose-400' : darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>{phoneError || 'Enter exactly 10 digits. The +91 country code is added automatically and this number will be shown on your report.'}</p>
                   <label className="text-xs font-semibold sm:col-span-2">Email<input type="email" autoComplete="email" value={formData.contact} onChange={event => setFormData({ ...formData, contact: event.target.value })} placeholder="name@example.com" className={`mt-1 w-full rounded-xl border p-3 text-sm font-normal ${darkMode ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-zinc-200'}`} /></label>
                 </div>
-                <label className="flex items-start gap-2 text-xs leading-relaxed"><input type="checkbox" checked={formData.shareContact} onChange={event => setFormData({ ...formData, shareContact: event.target.checked })} className="mt-0.5 accent-cyan-600" /><span>Show these contact details to people viewing this report</span></label>
+                <label className="flex items-start gap-2 text-xs leading-relaxed"><input type="checkbox" checked={formData.shareContact} onChange={event => setFormData({ ...formData, shareContact: event.target.checked })} className="mt-0.5 accent-cyan-600" /><span>Share my name and email (if provided) in the report details. My phone number is always shown for contact.</span></label>
               </section>
 
               <div>
