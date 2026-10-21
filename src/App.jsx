@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import MapSearch from './components/MapSearch';
 import { BASE_ZOOM, CAMPUS_ASPECT_RATIO, CAMPUS_BOUNDS, FLY_MS, MAX_ZOOM } from './config/mapConfig';
@@ -9,7 +9,7 @@ import SEED_ITEMS from './data/seedItems.json';
 import { 
   Search, Plus, MapPin, Calendar, ShieldCheck,
   CheckCircle, AlertTriangle, 
-  Sun, Moon, Compass, Sparkles, X, Check,
+  Sun, Moon, Compass, RefreshCw, Sparkles, X, Check,
   ArrowRight, AlertCircle, ZoomIn, ZoomOut, Navigation, Phone
 } from 'lucide-react';
 
@@ -610,7 +610,7 @@ export default function App() {
   };
 
   return (
-    <div className={`ui-app min-h-screen transition-colors duration-300 ${darkMode ? 'bg-zinc-950 text-zinc-200' : 'bg-[#f4f2eb] text-[#19372e]'}`}>
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-zinc-950 text-zinc-200' : 'bg-[#f4f2eb] text-[#19372e]'}`}>
       
       {successBanner && (
         <div className="bg-emerald-600 text-white px-4 py-3 text-center font-medium shadow-md sticky top-0 z-50 flex items-center justify-center gap-2">
@@ -625,15 +625,15 @@ export default function App() {
       )}
 
       {/* Header */}
-      <header className={`ui-header sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${darkMode ? 'bg-zinc-900/90 border-zinc-800' : 'bg-[#f8f7f2]/95 border-[#e4e1d7]'}`}>
-        <div className="mx-auto flex h-[4.5rem] max-w-[1320px] items-center justify-between px-4 sm:px-6 lg:px-10">
+      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${darkMode ? 'bg-zinc-900/90 border-zinc-800' : 'bg-[#f8f7f2]/95 border-[#e4e1d7]'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
               <div className="flex items-center gap-3">
             <div className={`relative flex h-11 w-11 items-center justify-center rounded-2xl shadow-lg ${darkMode ? 'bg-zinc-800 text-cyan-400 shadow-cyan-500/20' : 'bg-[#19372e] text-[#f3a45b] shadow-[#19372e]/15'}`}>
               <MapPin className="h-6 w-6" strokeWidth={2.2} />
               <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-[#ef9c55] text-[#19372e]"><Check className="h-2.5 w-2.5" strokeWidth={3} /></span>
             </div>
             <div>
-              <h1 className={`text-lg font-bold tracking-tight sm:text-xl ${darkMode ? 'text-zinc-100' : 'text-[#19372e]'}`}>
+              <h1 className={`text-xl font-bold tracking-tight ${darkMode ? 'text-zinc-100' : 'text-[#19372e]'}`}>
                 VIT Find &amp; Connect
               </h1>
               <p className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${darkMode ? 'text-zinc-400' : 'text-zinc-500'}`}>
@@ -664,10 +664,10 @@ export default function App() {
       </header>
 
       {/* Main Container */}
-      <main className="ui-main mx-auto max-w-[1320px] px-4 py-6 sm:px-6 lg:px-10 lg:py-9">
+      <main className="mx-auto max-w-[1536px] px-4 py-7 sm:px-6 lg:px-8 lg:py-10">
 
         {/* Campus welcome panel */}
-        <section className={`ui-hero relative mb-8 overflow-hidden rounded-[1.75rem] px-6 py-8 sm:px-10 sm:py-10 lg:px-12 ${darkMode ? 'bg-zinc-900' : 'bg-[#19372e]'}`}>
+        <section className={`relative mb-7 overflow-hidden rounded-[2rem] px-6 py-8 shadow-xl sm:px-10 sm:py-11 lg:px-14 ${darkMode ? 'bg-zinc-900' : 'bg-[#19372e]'}`}>
           <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-28 h-80 w-80 rounded-full border border-white/10 sm:right-12 sm:top-[-9rem] sm:h-[27rem] sm:w-[27rem]" />
           <div aria-hidden="true" className="pointer-events-none absolute -right-4 top-10 h-48 w-48 rounded-full border border-white/10 sm:right-28 sm:top-2 sm:h-64 sm:w-64" />
           <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
@@ -687,8 +687,8 @@ export default function App() {
         </section>
         
         {/* Search & Filters */}
-        <div className={`ui-search-panel mb-8 rounded-[1.25rem] border p-4 shadow-sm sm:p-5 ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-[#fffefa] border-[#e5e1d7]'}`}>
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className={`mb-8 rounded-[1.5rem] border p-4 shadow-sm sm:p-5 ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-[#fffefa] border-[#e5e1d7]'}`}>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(220px,1fr)_minmax(0,2fr)] lg:items-center">
             
             <div className="relative w-full md:w-80">
               <Search className={`absolute left-3.5 top-3.5 w-5 h-5 ${darkMode ? 'text-zinc-400' : 'text-zinc-500'}`} />
@@ -703,12 +703,29 @@ export default function App() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+            <div className="grid w-full grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-[minmax(125px,1fr)_minmax(150px,1.2fr)_minmax(165px,1.2fr)]">
+              <select
+                aria-label="Filter by category"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className={`w-full min-w-0 py-2.5 px-3 rounded-xl border text-xs font-medium focus:outline-none ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-700'}`}
+              >
+                <option value="All">All Categories</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Stationery">Stationery</option>
+                <option value="Keys">Keys</option>
+                <option value="Personal">Personal</option>
+                <option value="ID & Cards">ID &amp; Cards</option>
+                <option value="Books">Books</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Bags">Bags</option>
+              </select>
+
               <select
                 aria-label="Filter by campus location"
                 value={locationFilter}
                 onChange={(e) => handleLocationFilterChange(e.target.value)}
-                className={`py-2 px-3 rounded-xl border text-xs font-medium focus:outline-none max-w-[160px] truncate ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-700'}`}
+                className={`w-full min-w-0 py-2.5 px-3 rounded-xl border text-xs font-medium focus:outline-none truncate ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-700'}`}
               >
                 <option value="All">All Locations</option>
                 {LOCATION_GROUPS.map(group => <optgroup key={group.label} label={group.label}>{group.locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}</optgroup>)}
@@ -718,14 +735,27 @@ export default function App() {
                 aria-label="Sort reports"
                 value={sortOrder}
                 onChange={event => setSortOrder(event.target.value)}
-                className={`py-2 px-3 rounded-xl border text-xs font-medium focus:outline-none ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-700'}`}
+                className={`col-span-2 w-full min-w-0 py-2.5 px-3 rounded-xl border text-xs font-medium focus:outline-none sm:col-span-1 ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-700'}`}
               >
                 <option value="newest">Newest first</option>
                 <option value="oldest">Oldest first</option>
                 <option value="nearest">Nearest / most relevant</option>
               </select>
 
-              <div className={`ui-view-toggle flex p-1 rounded-xl border ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-100 border-zinc-200'}`}>
+              <div className="col-span-2 flex items-center justify-end gap-2.5 sm:col-span-3">
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  disabled={isInitialLoading}
+                  aria-label={isInitialLoading ? 'Refreshing reports' : 'Refresh reports'}
+                  title="Refresh reports"
+                  className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl border px-3.5 text-xs font-semibold transition disabled:cursor-wait ${darkMode ? 'border-zinc-700 text-zinc-300 hover:border-cyan-500/50 hover:text-cyan-300 disabled:text-zinc-500' : 'border-zinc-200 bg-white text-zinc-700 hover:border-[#6d8a70] hover:text-[#24483a] disabled:text-zinc-400'}`}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isInitialLoading ? 'animate-spin' : ''}`} aria-hidden="true" />
+                  <span>{isInitialLoading ? 'Refreshing' : 'Refresh'}</span>
+                </button>
+
+              <div className={`flex h-10 p-1 rounded-xl border ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-100 border-zinc-200'}`}>
                 <button
                   onClick={() => setActiveTab('grid')}
                   className={`rounded-lg p-2 text-xs font-medium transition-all ${activeTab === 'grid' ? (darkMode ? 'bg-cyan-500 text-zinc-950 shadow' : 'bg-[#24483a] text-white shadow') : darkMode ? 'text-zinc-400 hover:text-zinc-200' : 'text-[#68776c] hover:text-[#19372e]'}`}
@@ -745,18 +775,19 @@ export default function App() {
                   <MapPin className="w-4 h-4" />
                 </button>
               </div>
+              </div>
 
             </div>
           </div>
         </div>
 
-        {activeTab === 'grid' && <div className="ui-board-heading mb-4 flex flex-wrap items-end justify-between gap-2 px-1">
+        {activeTab === 'grid' && <div className="mb-4 flex flex-wrap items-end justify-between gap-2 px-1">
           <div>
-            <p className={`text-[11px] font-bold uppercase tracking-[0.18em] ${darkMode ? 'text-cyan-400' : 'text-[#7c8b73]'}`}>The campus board</p>
+            <p className={`text-[11px] font-bold uppercase tracking-[0.18em] ${darkMode ? 'text-cyan-400' : 'text-[#5f705f]'}`}>The campus board</p>
             <h2 className={`mt-1 text-2xl font-semibold tracking-tight ${darkMode ? 'text-white' : 'text-[#19372e]'}`}>Recent reports</h2>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <span className={`text-sm ${darkMode ? 'text-zinc-400' : 'text-[#768178]'}`}>{filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'} to explore</span>
+            <span className={`text-sm ${darkMode ? 'text-zinc-400' : 'text-[#5d6c62]'}`}>{filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'} to explore</span>
             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${isSupabaseConfigured ? (darkMode ? 'border-emerald-800 bg-emerald-950 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-800') : (darkMode ? 'border-amber-800 bg-amber-950 text-amber-200' : 'border-amber-200 bg-amber-50 text-amber-800')}`}>
               {isSupabaseConfigured ? 'Shared board' : 'This device only'}
             </span>
@@ -775,7 +806,7 @@ export default function App() {
             })}
           </div>
           <div className="flex items-center gap-2" role="group" aria-label="Show lost or found reports">
-            {[['all', 'All items'], ['lost', 'Lost'], ['found', 'Found'], ['resolved', 'Resolved']].map(([status, label]) => <button key={status} type="button" onClick={() => setStatusFilter(status)} aria-pressed={statusFilter === status} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${statusFilter === status ? 'bg-[#ef9c55] text-[#19372e]' : darkMode ? 'text-zinc-400 hover:bg-zinc-900' : 'text-[#718077] hover:bg-white'}`}>{label}</button>)}
+            {[['all', 'All items'], ['lost', 'Lost'], ['found', 'Found'], ['resolved', 'Resolved']].map(([status, label]) => <button key={status} type="button" onClick={() => setStatusFilter(status)} aria-pressed={statusFilter === status} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${statusFilter === status ? 'bg-[#ef9c55] text-[#19372e]' : darkMode ? 'text-zinc-400 hover:bg-zinc-900' : 'text-[#5d6c62] hover:bg-white'}`}>{label}</button>)}
           </div>
         </div>}
 
@@ -783,31 +814,35 @@ export default function App() {
         {activeTab === 'grid' && (
           <div>
             {isInitialLoading ? (
-              <div className="ui-loading-grid grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading item reports" aria-busy="true">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading item reports" aria-busy="true">
                 {Array.from({ length: 6 }, (_, index) => <div key={index} className={`animate-pulse overflow-hidden rounded-2xl border ${darkMode ? 'border-zinc-800 bg-zinc-900' : 'border-zinc-200 bg-white'}`}>
                   <div className={darkMode ? 'h-48 bg-zinc-800' : 'h-48 bg-zinc-200'} />
                   <div className="space-y-3 p-5"><div className={`h-4 w-3/5 rounded ${darkMode ? 'bg-zinc-800' : 'bg-zinc-200'}`} /><div className={`h-3 w-full rounded ${darkMode ? 'bg-zinc-800' : 'bg-zinc-200'}`} /><div className={`h-3 w-2/3 rounded ${darkMode ? 'bg-zinc-800' : 'bg-zinc-200'}`} /><div className={`mt-5 h-8 rounded ${darkMode ? 'bg-zinc-800' : 'bg-zinc-200'}`} /></div>
                 </div>)}
               </div>
             ) : filteredItems.length === 0 ? (
-              <div className={`ui-empty-state text-center py-20 rounded-3xl border ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+              <div className={`text-center py-20 rounded-3xl border ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
                 <AlertCircle className="w-12 h-12 mx-auto mb-3 text-zinc-400" />
               <h2 className="text-lg font-semibold">No items found</h2>
                 <p className={`text-sm mt-1 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>Try adjusting your filters or search keywords.</p>
-                <button type="button" onClick={() => { setSearchTerm(''); setCategoryFilter('All'); setLocationFilter('All'); setStatusFilter('all'); }} className="ui-clear-filters mt-5 inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold">Clear filters</button>
               </div>
             ) : (
-              <div className="ui-reports-grid grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-x-7 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
                 {sortedItems.map((item) => (
-                  <article
+                  <div
                     key={item.id}
-                    className={`ui-item-card group flex flex-col justify-between overflow-hidden rounded-[1.25rem] border transition-all duration-200 ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-[#fffefa] border-[#e2ded4]'}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`View details for ${item.title}, ${item.status} item at ${item.location}`}
+                    onClick={() => { setSelectedItem(item); setVerifyStep(false); setEnteredPin(''); setVerifyError(''); }}
+                    onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedItem(item); setVerifyStep(false); setEnteredPin(''); setVerifyError(''); } }}
+                    className={`group flex cursor-pointer flex-col justify-between overflow-hidden rounded-[1.6rem] border transition-all duration-200 hover:-translate-y-0.5 ${darkMode ? 'bg-zinc-900 border-zinc-800 hover:border-[#668271] hover:shadow-[0_14px_32px_rgba(0,0,0,0.24)]' : 'bg-[#fffefa] border-[#e2ded4] shadow-[0_4px_16px_rgba(34,52,41,0.055)] hover:border-[#c7cbbb] hover:shadow-[0_12px_28px_rgba(34,52,41,0.1)]'}`}
                   >
                     <div>
                       {item.image ? <div className="item-photo relative aspect-[16/9] overflow-hidden bg-[#e9e8df] dark:bg-zinc-800">
                         <img src={item.image} alt={`Illustrative reference photo for ${item.title}`} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
                         <div className="absolute top-3 left-3">
-                        <span data-status={item.status} className={`ui-status-pill rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide ${item.status === 'lost' ? 'bg-[#ff2758] text-white' : item.status === 'found' ? 'bg-[#00bd88] text-[#073b31]' : 'bg-zinc-300 text-zinc-700'}`}>
+                        <span className={`rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide ${item.status === 'lost' ? 'bg-[#c21f4b] text-white' : item.status === 'found' ? 'bg-[#00bd88] text-[#073b31]' : 'bg-zinc-300 text-zinc-700'}`}>
                             {item.status}
                           </span>
                         </div>
@@ -816,11 +851,11 @@ export default function App() {
                         </div>
                       </div> : <div className="flex aspect-[16/9] flex-col justify-between bg-[#f4f2eb] p-4">
                         <div className="flex items-center justify-between gap-2">
-                          <span data-status={item.status} className={`ui-status-pill rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide ${item.status === 'lost' ? 'bg-[#ff2758] text-white' : item.status === 'found' ? 'bg-[#00bd88] text-[#073b31]' : 'bg-zinc-300 text-zinc-700'}`}>{item.status}</span>
+                          <span className={`rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide ${item.status === 'lost' ? 'bg-[#c21f4b] text-white' : item.status === 'found' ? 'bg-[#00bd88] text-[#073b31]' : 'bg-zinc-300 text-zinc-700'}`}>{item.status}</span>
                           <span className={`rounded-xl border px-3 py-1.5 text-xs font-semibold ${CATEGORY_BADGE_CLASSES[item.category] || 'border-zinc-200 bg-zinc-100 text-zinc-700'}`}>{item.category}</span>
                         </div>
                         <div className="border-t border-[#e3dfd4] pt-3">
-                          <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#768178]">VIT Vellore · Campus report</span>
+                          <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#5d6c62]">VIT Vellore · Campus report</span>
                         </div>
                       </div>}
 
@@ -850,11 +885,11 @@ export default function App() {
                         {item.shareContact && item.owner && <span className={darkMode ? 'text-zinc-200' : 'text-[#35483b]'}>{item.owner}</span>}
                         {item.phone && <a className={`inline-flex items-center gap-1.5 hover:underline ${darkMode ? 'text-zinc-300' : 'text-[#526058]'}`} href={`tel:${item.phone}`} aria-label={`Call reporter at ${item.phone}`}><Phone className="h-3.5 w-3.5" />{item.phone}</a>}
                       </div>
-                      <button type="button" onClick={() => { setSelectedItem(item); setVerifyStep(false); setEnteredPin(''); setVerifyError(''); }} className={`ui-card-action inline-flex items-center gap-1 font-semibold group-hover:underline ${darkMode ? 'text-[#a4bdaa]' : 'text-[#8c5935]'}`}>
-                        View details <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
+                      <span className={`flex items-center gap-1 group-hover:underline ${darkMode ? 'text-[#a4bdaa]' : 'text-[#8c5935]'}`}>
+                        View Details & Claim <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
                     </div>
-                  </article>
+                  </div>
                 ))}
               </div>
             )}
@@ -863,11 +898,11 @@ export default function App() {
 
         {/* Campus map */}
         {activeTab === 'map' && (
-          <div className={`ui-map-panel mx-auto max-w-[1040px] overflow-hidden rounded-[1.25rem] border shadow-xl ${darkMode ? 'border-zinc-800 bg-zinc-900' : 'border-[#e3dfd4] bg-[#fffefa] shadow-[0_12px_36px_rgba(34,52,41,0.08)]'}`}>
+          <div className={`mx-auto max-w-[900px] overflow-hidden rounded-3xl border shadow-xl ${darkMode ? 'border-zinc-800 bg-zinc-900' : 'border-[#e3dfd4] bg-[#fffefa] shadow-[0_12px_36px_rgba(34,52,41,0.08)]'}`}>
             <div className={`flex items-center justify-between border-b px-5 py-4 ${darkMode ? 'border-zinc-800' : 'border-[#e8e4da]'}`}>
               <div className="flex items-center gap-3">
                 <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${darkMode ? 'bg-[#243a37] text-[#a4bdaa]' : 'bg-[#e8f0ee] text-[#49685c]'}`}><Navigation className="h-5 w-5" /></span>
-                <div><h2 className={`font-semibold ${darkMode ? 'text-zinc-100' : 'text-[#19372e]'}`}>VIT Vellore · Campus map</h2><p className={`mt-0.5 text-xs ${darkMode ? 'text-zinc-400' : 'text-[#768178]'}`}>Lost &amp; found reports around campus</p></div>
+                <div><h2 className={`font-semibold ${darkMode ? 'text-zinc-100' : 'text-[#19372e]'}`}>VIT Vellore · Campus map</h2><p className={`mt-0.5 text-xs ${darkMode ? 'text-zinc-400' : 'text-[#5d6c62]'}`}>Lost &amp; found reports around campus</p></div>
               </div>
               <span className={`hidden rounded-full border px-3 py-1.5 text-xs font-medium sm:inline-flex ${darkMode ? 'border-zinc-700 bg-zinc-800 text-zinc-300' : 'border-[#e5e1d7] bg-[#f7f6f0] text-[#64746a]'}`}>{mapItems.length} matching reports</span>
             </div>
@@ -943,7 +978,7 @@ export default function App() {
 
                 <div className={`absolute right-4 top-4 z-20 flex flex-col overflow-hidden rounded-2xl border shadow-lg ${darkMode ? 'border-zinc-700 bg-zinc-900/95 text-zinc-200' : 'border-[#e3dfd4] bg-[#fffefa]/95 text-[#3c5146]'}`} data-map-control>
                   <button type="button" aria-label="Zoom in" title="Zoom in" disabled={mapZoom >= MAX_ZOOM} onPointerDown={event => event.stopPropagation()} onClick={() => handleMapZoom(1)} className="p-3 transition hover:bg-[#edf3ed] disabled:opacity-35 dark:hover:bg-zinc-800"><ZoomIn className="h-5 w-5" /></button>
-                  <span className={`border-y py-1 text-center text-[10px] font-medium ${darkMode ? 'border-zinc-700 text-zinc-400' : 'border-[#e8e4da] text-[#768178]'}`}>z{mapZoom}</span>
+                  <span className={`border-y py-1 text-center text-[10px] font-medium ${darkMode ? 'border-zinc-700 text-zinc-400' : 'border-[#e8e4da] text-[#5d6c62]'}`}>z{mapZoom}</span>
                   <button type="button" aria-label="Zoom out" title="Zoom out" disabled={mapZoom <= mapMinZoom} onPointerDown={event => event.stopPropagation()} onClick={() => handleMapZoom(-1)} className="p-3 transition hover:bg-[#edf3ed] disabled:opacity-35 dark:hover:bg-zinc-800"><ZoomOut className="h-5 w-5" /></button>
                   <button type="button" aria-label="Show full campus" title="Show full campus" onPointerDown={event => event.stopPropagation()} onClick={() => { setMapZoom(mapMinZoom); setMapCenter(INITIAL_MAP_CENTER); setSearchTerm(''); setFocusedSearchId(null); setFocusedMapItem(null); }} className={`border-t p-3 transition hover:bg-[#edf3ed] dark:hover:bg-zinc-800 ${darkMode ? 'border-zinc-700' : 'border-[#e8e4da]'}`}><Compass className="h-5 w-5" /></button>
                 </div>
@@ -961,7 +996,7 @@ export default function App() {
                       {item.status === 'lost' ? '!' : <Check className="h-4 w-4" />}
                     </button>
                     {focusedMapItem?.id === item.id && <div data-map-control className={`absolute bottom-full left-1/2 mb-3 w-64 -translate-x-1/2 rounded-2xl border p-4 text-left shadow-xl ${darkMode ? 'border-zinc-700 bg-zinc-900 text-zinc-100' : 'border-[#e3dfd4] bg-[#fffefa] text-[#19372e]'}`}>
-                      <button type="button" aria-label="Close map popup" onClick={() => setFocusedMapItem(null)} className={`absolute right-2 top-2 rounded p-1 ${darkMode ? 'text-zinc-300 hover:bg-zinc-800' : 'text-[#768178] hover:bg-[#edf3ed]'}`}><X className="h-4 w-4" /></button>
+                      <button type="button" aria-label="Close map popup" onClick={() => setFocusedMapItem(null)} className={`absolute right-2 top-2 rounded p-1 ${darkMode ? 'text-zinc-300 hover:bg-zinc-800' : 'text-[#5d6c62] hover:bg-[#edf3ed]'}`}><X className="h-4 w-4" /></button>
                       <p className="pr-6 text-sm font-bold">{fields.name}</p>
                       <p className={`mt-2 text-xs ${darkMode ? 'text-zinc-300' : 'text-[#5f6d62]'}`}>{fields.building}</p>
                       <p className={`mt-1 text-xs ${darkMode ? 'text-zinc-300' : 'text-[#5f6d62]'}`}>Floor: {fields.floor}</p>
@@ -980,7 +1015,7 @@ export default function App() {
                 <div className={`absolute bottom-4 left-4 z-20 flex max-w-[calc(100%-5rem)] flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border px-4 py-3 text-xs font-medium shadow-lg backdrop-blur-sm ${darkMode ? 'border-zinc-700 bg-zinc-900/95 text-zinc-200' : 'border-[#e3dfd4] bg-[#fffefa]/95 text-[#3c5146]'}`} data-map-control>
                   <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-[#a75c49]" />Lost</span>
                   <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-[#54755a]" />Found</span>
-                  <span className={`hidden md:inline ${darkMode ? 'text-zinc-400' : 'text-[#768178]'}`}>Drag to explore · Zoom with the controls</span>
+                  <span className={`hidden md:inline ${darkMode ? 'text-zinc-400' : 'text-[#5d6c62]'}`}>Drag to explore · Zoom with the controls</span>
                 </div>
                 <div className={`absolute bottom-2 right-2 z-10 rounded-lg px-2 py-1 text-[10px] ${darkMode ? 'bg-zinc-900/90 text-zinc-300' : 'bg-[#fffefa]/90 text-[#657168]'}`}>&copy; OpenStreetMap contributors</div>
               </div>;
@@ -991,7 +1026,7 @@ export default function App() {
       {/* Details & Verification Modal */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div role="dialog" aria-modal="true" aria-labelledby="selected-item-title" className={`ui-dialog ui-details-dialog w-full max-w-lg rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[90vh] ${darkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-100 text-zinc-800'}`}>
+          <div role="dialog" aria-modal="true" aria-labelledby="selected-item-title" className={`w-full max-w-lg rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[90vh] ${darkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-100 text-zinc-800'}`}>
             
             {selectedItem.image && <div className="relative h-56 bg-zinc-100 dark:bg-zinc-800 shrink-0">
               <img src={selectedItem.image} alt={`Illustrative reference photo for ${selectedItem.title}`} loading="lazy" onError={event => event.currentTarget.remove()} className="h-full w-full object-cover" />
@@ -1038,7 +1073,7 @@ export default function App() {
 
               {!verifyStep ? (
                 <div className="space-y-3 pt-2">
-                  <div className={`ui-contact-box p-4 rounded-2xl border space-y-2 ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-cyan-50/60 border-cyan-100'}`}>
+                  <div className={`p-4 rounded-2xl border space-y-2 ${darkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-cyan-50/60 border-cyan-100'}`}>
                     <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-500 flex items-center gap-1.5">
                       <ShieldCheck className="w-4 h-4" /> Contact reporter
                     </h3>
@@ -1052,7 +1087,7 @@ export default function App() {
                   {selectedItem.status !== 'resolved' && (
                     <button 
                       onClick={() => setVerifyStep(true)}
-                      className="ui-primary-action w-full py-3 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-medium shadow-md transition-all flex items-center justify-center gap-2 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                      className="w-full py-3 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-medium shadow-md transition-all flex items-center justify-center gap-2 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]"
                     >
                       <CheckCircle className="w-5 h-5" />
                       <span>Claim / Resolve Item (Double Verification)</span>
@@ -1060,7 +1095,7 @@ export default function App() {
                   )}
                 </div>
               ) : (
-                <div className={`ui-verify-box p-5 rounded-2xl border space-y-4 ${darkMode ? 'bg-zinc-800 border-cyan-900' : 'bg-amber-50 border-amber-200'}`}>
+                <div className={`p-5 rounded-2xl border space-y-4 ${darkMode ? 'bg-zinc-800 border-cyan-900' : 'bg-amber-50 border-amber-200'}`}>
                   <div>
                     <h3 className="font-bold text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 shrink-0" /> Security Verification PIN Required
@@ -1072,8 +1107,6 @@ export default function App() {
 
                   <input 
                     type="password"
-                    aria-label="Four-digit verification PIN"
-                    inputMode="numeric"
                     maxLength="4"
                     placeholder="Enter PIN"
                     value={enteredPin}
@@ -1110,7 +1143,7 @@ export default function App() {
       {/* Report Modal */}
       {isReportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div role="dialog" aria-modal="true" aria-labelledby="report-modal-title" className={`ui-dialog ui-report-dialog w-full max-w-xl rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[90vh] ${darkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-100 text-zinc-800'}`}>
+          <div role="dialog" aria-modal="true" aria-labelledby="report-modal-title" className={`w-full max-w-xl rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[90vh] ${darkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-100 text-zinc-800'}`}>
             
             <div className="p-5 border-b flex items-center justify-between">
               <h2 id="report-modal-title" className="font-bold text-lg flex items-center gap-2">
